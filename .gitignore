@@ -4,6 +4,7 @@
 node_modules/
 build/
 dist/
+*.application.properties
 .env
 .env.local
 .env.development.local
@@ -44,3 +45,8 @@ Thumbs.db
 # Misc
 # ================================
 coverage/
+
+# ================================
+# Local profile image uploads (implemented in backend)
+# ================================
+data/profile-uploads/
