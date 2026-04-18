@@ -15,6 +15,8 @@ public final class AppConstants {
     public static final int PURPOSE_MAX_LENGTH = 500;
     public static final int REJECTION_REASON_MIN_LENGTH = 10;
     public static final int REJECTION_REASON_MAX_LENGTH = 500;
+    public static final int CANCELLATION_REASON_MIN_LENGTH = 10;
+    public static final int CANCELLATION_REASON_MAX_LENGTH = 500;
     public static final int EXPECTED_ATTENDEES_MIN = 1;
     public static final int EXPECTED_ATTENDEES_MAX = 500;
 }

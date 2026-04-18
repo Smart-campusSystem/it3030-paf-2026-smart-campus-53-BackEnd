@@ -8,7 +8,9 @@ import com.smart_campus_system.demo.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -47,26 +49,24 @@ public class BookingController {
                 .body(ApiResponse.ok(bookings, "My bookings fetched successfully"));
     }
 
-    @GetMapping("/{id}")
+    /**
+     * Unified listing: users see their bookings; admins see all. Supports status, date range, and resource filters.
+     */
+    @GetMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ResponseEntity<ApiResponse<BookingResponseDTO>> getBookingById(@PathVariable Long id,
-                                                                          Authentication authentication) {
+    public ResponseEntity<ApiResponse<List<BookingResponseDTO>>> getBookings(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Long resourceId,
+            Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
         UserRole role = authentication != null
                 && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
                 ? UserRole.ADMIN
                 : (authentication == null ? UserRole.ADMIN : UserRole.USER);
-        BookingResponseDTO booking = bookingService.getBookingById(id, email, role);
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noCache())
-                .body(ApiResponse.ok(booking, "Booking fetched successfully"));
-    }
-
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<BookingResponseDTO>>> getAllBookings(@RequestParam(required = false) BookingStatus status,
-                                                                                @RequestParam(required = false) LocalDate date) {
-        List<BookingResponseDTO> bookings = bookingService.getAllBookings(status, date);
+        List<BookingResponseDTO> bookings = bookingService.listBookings(email, role, status, from, to, date, resourceId);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(ApiResponse.ok(bookings, "Bookings fetched successfully"));
@@ -81,15 +81,57 @@ public class BookingController {
                 .body(ApiResponse.ok(stats, "Booking stats fetched successfully"));
     }
 
+    /**
+     * Without {@code date}: checks a concrete {@code startTime}/{@code endTime} range (ISO-8601).<br>
+     * With {@code date}: returns free 1-hour slots for that day; optional {@code startTime}/{@code endTime} on the same
+     * calendar day checks whether that window is bookable.
+     */
     @GetMapping("/availability")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ApiResponse<AvailabilityResponseDTO>> checkAvailability(@RequestParam Long resourceId,
-                                                                                  @RequestParam LocalDateTime startTime,
-                                                                                  @RequestParam LocalDateTime endTime) {
-        AvailabilityResponseDTO availability = bookingService.checkAvailability(resourceId, startTime, endTime);
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<ApiResponse<AvailabilityResponseDTO>> checkAvailability(
+            @RequestParam Long resourceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+        AvailabilityResponseDTO availability;
+        if (date != null) {
+            availability = bookingService.checkAvailability(resourceId, null, null, date, startTime, endTime);
+        } else {
+            availability = bookingService.checkAvailability(resourceId, startTime, endTime, null, null, null);
+        }
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS).cachePrivate())
                 .body(ApiResponse.ok(availability, "Availability checked"));
+    }
+
+    @GetMapping("/{id}/qr")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<byte[]> getQr(@PathVariable Long id, Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
+        UserRole role = authentication != null
+                && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+                ? UserRole.ADMIN
+                : (authentication == null ? UserRole.ADMIN : UserRole.USER);
+        byte[] png = bookingService.getBookingQrPng(id, email, role);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .cacheControl(CacheControl.noStore())
+                .body(png);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<ApiResponse<BookingResponseDTO>> getBookingById(@PathVariable Long id,
+                                                                          Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
+        UserRole role = authentication != null
+                && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+                ? UserRole.ADMIN
+                : (authentication == null ? UserRole.ADMIN : UserRole.USER);
+        BookingResponseDTO booking = bookingService.getBookingById(id, email, role);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .body(ApiResponse.ok(booking, "Booking fetched successfully"));
     }
 
     @PutMapping("/{id}/approve")
@@ -113,6 +155,16 @@ public class BookingController {
                                                                   Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
         BookingResponseDTO updated = bookingService.cancelBooking(id, email);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Booking cancelled"));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<BookingResponseDTO>> cancelWithReason(@PathVariable Long id,
+                                                                              @Valid @RequestBody CancelBookingRequestDTO dto,
+                                                                              Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
+        BookingResponseDTO updated = bookingService.cancelBooking(id, email, dto.getReason());
         return ResponseEntity.ok(ApiResponse.ok(updated, "Booking cancelled"));
     }
 }

@@ -27,6 +27,9 @@ public class BookingResponseDTO extends RepresentationModel<BookingResponseDTO> 
 
     private BookingStatus status;
     private String rejectionReason;
+    private String cancellationReason;
+
+    private boolean qrAvailable;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -157,6 +160,22 @@ public class BookingResponseDTO extends RepresentationModel<BookingResponseDTO> 
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public boolean isQrAvailable() {
+        return qrAvailable;
+    }
+
+    public void setQrAvailable(boolean qrAvailable) {
+        this.qrAvailable = qrAvailable;
     }
 
     public LocalDateTime getCreatedAt() {
