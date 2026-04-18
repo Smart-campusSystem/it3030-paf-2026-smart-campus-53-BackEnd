@@ -22,4 +22,7 @@ public class AuthRegisterRequest {
 	@NotBlank
 	@Size(min = 8, max = 128)
 	private String password;
+
+	@NotBlank
+	private String otp;
 }

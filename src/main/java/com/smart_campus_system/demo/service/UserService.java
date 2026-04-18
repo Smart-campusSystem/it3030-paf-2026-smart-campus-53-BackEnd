@@ -25,16 +25,19 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final ProfileImageStorage profileImageStorage;
 	private final JwtUtil jwtUtil;
+	private final OtpService otpService;
 
 	public UserService(
 			UserRepository userRepository,
 			PasswordEncoder passwordEncoder,
 			ProfileImageStorage profileImageStorage,
-			JwtUtil jwtUtil) {
+			JwtUtil jwtUtil,
+			OtpService otpService) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.profileImageStorage = profileImageStorage;
 		this.jwtUtil = jwtUtil;
+		this.otpService = otpService;
 	}
 
 	private static String normEmail(String email) {
@@ -45,6 +48,9 @@ public class UserService {
 		String email = normEmail(req.getEmail());
 		if (userRepository.existsByEmail(email)) {
 			throw new ApiException(HttpStatus.CONFLICT, "Email already registered");
+		}
+		if (!otpService.verifyOtp(email, req.getOtp())) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP");
 		}
 		User user = User.builder()
 				.email(email)
