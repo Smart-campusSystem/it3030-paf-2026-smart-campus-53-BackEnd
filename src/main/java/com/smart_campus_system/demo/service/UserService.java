@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class UserService {
@@ -69,7 +68,9 @@ public class UserService {
 		if (!user.isActive()) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Account is disabled");
 		}
-		if (user.getPasswordHash() == null || !"LOCAL".equalsIgnoreCase(Objects.requireNonNullElse(user.getProvider(), ""))) {
+		// Allow password login whenever a password is set, including after Google is linked
+		// (upsertFromOAuth sets provider to the OAuth registration id, not "LOCAL").
+		if (user.getPasswordHash() == null) {
 			throw new BadCredentialsException("Invalid credentials");
 		}
 		if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
