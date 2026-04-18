@@ -58,7 +58,7 @@ public class UserService {
 		user = userRepository.save(user);
 		return AuthResponse.builder()
 				.accessToken(jwtUtil.generateToken(user))
-				.user(UserResponse.from(user))
+				.user(toUserResponse(user))
 				.build();
 	}
 
@@ -78,7 +78,7 @@ public class UserService {
 		}
 		return AuthResponse.builder()
 				.accessToken(jwtUtil.generateToken(user))
-				.user(UserResponse.from(user))
+				.user(toUserResponse(user))
 				.build();
 	}
 
@@ -122,12 +122,12 @@ public class UserService {
 
 	@Transactional(readOnly = true)
 	public List<UserResponse> findAll() {
-		return userRepository.findAll().stream().map(UserResponse::from).toList();
+		return userRepository.findAll().stream().map(this::toUserResponse).toList();
 	}
 
 	@Transactional(readOnly = true)
 	public UserResponse findById(Long id) {
-		return userRepository.findById(id).map(UserResponse::from).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+		return userRepository.findById(id).map(this::toUserResponse).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
 	}
 
 	@Transactional(readOnly = true)
@@ -145,7 +145,7 @@ public class UserService {
 
 	@Transactional(readOnly = true)
 	public UserResponse currentProfile() {
-		return UserResponse.from(loadCurrentUserEntity());
+		return toUserResponse(loadCurrentUserEntity());
 	}
 
 	/**
@@ -171,7 +171,7 @@ public class UserService {
 				.passwordHash(passwordEncoder.encode(req.getPassword()))
 				.active(true);
 		User saved = userRepository.save(b.build());
-		return UserResponse.from(saved);
+		return toUserResponse(saved);
 	}
 
 	@Transactional
@@ -205,7 +205,7 @@ public class UserService {
 				user.setProvider("LOCAL");
 			}
 		}
-		return UserResponse.from(userRepository.save(user));
+		return toUserResponse(userRepository.save(user));
 	}
 
 	@Transactional
@@ -225,7 +225,12 @@ public class UserService {
 		User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
 		String url = profileImageStorage.save(userId, file);
 		user.setProfileImageUrl(url);
-		return UserResponse.from(userRepository.save(user));
+		return toUserResponse(userRepository.save(user));
+	}
+
+	private UserResponse toUserResponse(User user) {
+		String displayUrl = profileImageStorage.resolveDisplayUrl(user.getProfileImageUrl());
+		return UserResponse.from(user, displayUrl);
 	}
 
 	public User loadCurrentUserEntity() {

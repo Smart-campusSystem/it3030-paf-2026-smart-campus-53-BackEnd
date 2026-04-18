@@ -22,6 +22,10 @@ public class UserResponse {
 	LocalDateTime updatedAt;
 
 	public static UserResponse from(User u) {
+		return from(u, u.getProfileImageUrl());
+	}
+
+	public static UserResponse from(User u, String profileImageUrl) {
 		return UserResponse.builder()
 				.id(u.getId())
 				.email(u.getEmail())
@@ -29,7 +33,7 @@ public class UserResponse {
 				.lastName(u.getLastName())
 				.role(u.getRole())
 				.provider(u.getProvider())
-				.profileImageUrl(u.getProfileImageUrl())
+				.profileImageUrl(profileImageUrl)
 				.active(u.isActive())
 				.createdAt(u.getCreatedAt())
 				.updatedAt(u.getUpdatedAt())
