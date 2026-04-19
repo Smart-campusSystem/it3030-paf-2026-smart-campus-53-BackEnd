@@ -25,6 +25,7 @@ public class NotificationService {
 	private final NotificationRepository notificationRepository;
 	private final UserRepository userRepository;
 	private final ObjectProvider<JavaMailSender> mailSenderProvider;
+	private final SseService sseService;
 
 	@Value("${spring.mail.host:}")
 	private String mailHost;
@@ -32,10 +33,12 @@ public class NotificationService {
 	public NotificationService(
 			NotificationRepository notificationRepository,
 			UserRepository userRepository,
-			ObjectProvider<JavaMailSender> mailSenderProvider) {
+			ObjectProvider<JavaMailSender> mailSenderProvider,
+			SseService sseService) {
 		this.notificationRepository = notificationRepository;
 		this.userRepository = userRepository;
 		this.mailSenderProvider = mailSenderProvider;
+		this.sseService = sseService;
 	}
 
 	@Transactional
@@ -64,10 +67,12 @@ public class NotificationService {
 
 	private void saveInApp(User user, String message, Long ticketId) {
 		Notification n = new Notification();
-		n.setUser(user);
+		n.setUserEmail(user.getEmail());
 		n.setMessage(message);
-		n.setReadFlag(false);
+		n.setRead(false);
+		n.setType("INFO");
 		n.setTicketId(ticketId);
+		n.setCreatedAt(java.time.LocalDateTime.now());
 		notificationRepository.save(n);
 	}
 
@@ -92,5 +97,14 @@ public class NotificationService {
 		catch (Exception ex) {
 			log.warn("Could not send email to {}: {}", to, ex.getMessage());
 		}
+	}
+
+	@Transactional
+	public void process(Notification notification) {
+		// Save to DB
+		notificationRepository.save(notification);
+		
+		// Send real-time
+		sseService.send(notification.getUserEmail(), notification);
 	}
 }

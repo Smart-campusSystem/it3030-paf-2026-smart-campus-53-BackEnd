@@ -1,6 +1,6 @@
 package com.smart_campus_system.demo.dto;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import com.smart_campus_system.demo.model.Notification;
 
@@ -9,14 +9,14 @@ public class NotificationResponse {
 	private Long id;
 	private String message;
 	private boolean read;
-	private Instant createdAt;
+	private LocalDateTime createdAt;
 	private Long ticketId;
 
 	public static NotificationResponse fromEntity(Notification n) {
 		NotificationResponse r = new NotificationResponse();
 		r.id = n.getId();
 		r.message = n.getMessage();
-		r.read = n.isReadFlag();
+		r.read = n.isRead();
 		r.createdAt = n.getCreatedAt();
 		r.ticketId = n.getTicketId();
 		return r;
@@ -34,7 +34,7 @@ public class NotificationResponse {
 		return read;
 	}
 
-	public Instant getCreatedAt() {
+	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
 

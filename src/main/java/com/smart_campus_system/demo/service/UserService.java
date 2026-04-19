@@ -26,18 +26,21 @@ public class UserService {
 	private final ProfileImageStorage profileImageStorage;
 	private final JwtUtil jwtUtil;
 	private final OtpService otpService;
+	private final NotificationProducer notificationProducer;
 
 	public UserService(
 			UserRepository userRepository,
 			PasswordEncoder passwordEncoder,
 			ProfileImageStorage profileImageStorage,
 			JwtUtil jwtUtil,
-			OtpService otpService) {
+			OtpService otpService,
+			NotificationProducer notificationProducer) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.profileImageStorage = profileImageStorage;
 		this.jwtUtil = jwtUtil;
 		this.otpService = otpService;
+		this.notificationProducer = notificationProducer;
 	}
 
 	private static String normEmail(String email) {
@@ -62,6 +65,17 @@ public class UserService {
 				.active(true)
 				.build();
 		user = userRepository.save(user);
+
+		// Trigger Notification Example exactly as requested!
+		com.smart_campus_system.demo.model.Notification n = com.smart_campus_system.demo.model.Notification.builder()
+				.message("Welcome to system!")
+				.type("INFO")
+				.userEmail(user.getEmail())
+				.isRead(false)
+				.createdAt(java.time.LocalDateTime.now())
+				.build();
+		notificationProducer.send(n);
+
 		return AuthResponse.builder()
 				.accessToken(jwtUtil.generateToken(user))
 				.user(toUserResponse(user))
