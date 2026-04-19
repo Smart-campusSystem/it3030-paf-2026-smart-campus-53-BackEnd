@@ -21,8 +21,10 @@ import org.springframework.data.domain.PageRequest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -32,6 +34,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Slf4j
 @RequiredArgsConstructor
 public class BookingService {
+
+    private static final DateTimeFormatter QR_DISPLAY_TIME =
+            DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm", Locale.ENGLISH);
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
@@ -416,13 +421,47 @@ public class BookingService {
     }
 
     private String buildQrPayload(Booking booking) {
-        return "SMARTCAMPUS|bookingId=%d|resourceId=%d|start=%s|end=%s"
-                .formatted(
-                        booking.getId(),
-                        booking.getResource() != null ? booking.getResource().getId() : 0,
-                        booking.getStartTime(),
-                        booking.getEndTime()
-                );
+        LocalDateTime st = booking.getStartTime();
+        LocalDateTime en = booking.getEndTime();
+        String start = st != null ? QR_DISPLAY_TIME.format(st) : "—";
+        String end = en != null ? QR_DISPLAY_TIME.format(en) : "—";
+
+        String resourceLine = "—";
+        Resource r = booking.getResource();
+        if (r != null) {
+            String name = r.getName() != null && !r.getName().isBlank() ? r.getName().trim() : "Resource";
+            String loc = r.getLocation() != null ? r.getLocation().trim() : "";
+            resourceLine = loc.isEmpty() ? name : name + " · " + loc;
+        }
+
+        String who = "—";
+        User u = booking.getUser();
+        if (u != null) {
+            if (u.getName() != null && !u.getName().isBlank()) {
+                who = u.getName().trim();
+                if (u.getEmail() != null && !u.getEmail().isBlank()) {
+                    who = who + " (" + u.getEmail().trim() + ")";
+                }
+            } else if (u.getEmail() != null && !u.getEmail().isBlank()) {
+                who = u.getEmail().trim();
+            }
+        }
+
+        String purpose = booking.getPurpose() != null ? booking.getPurpose().trim() : "—";
+        purpose = purpose.replace('\r', ' ').replace('\n', ' ');
+        if (purpose.length() > 450) {
+            purpose = purpose.substring(0, 447) + "...";
+        }
+
+        int attendees = booking.getExpectedAttendees() != null ? booking.getExpectedAttendees() : 0;
+
+        return "Smart Campus — booking check-in\n\n"
+                + "Booking ID: " + booking.getId() + "\n"
+                + "Resource: " + resourceLine + "\n"
+                + "When: " + start + " – " + end + "\n"
+                + "Booked by: " + who + "\n"
+                + "Purpose: " + purpose + "\n"
+                + "Expected attendees: " + attendees + "\n";
     }
 
     private boolean isWithinAvailabilityWindow(LocalDateTime start, LocalDateTime end) {
