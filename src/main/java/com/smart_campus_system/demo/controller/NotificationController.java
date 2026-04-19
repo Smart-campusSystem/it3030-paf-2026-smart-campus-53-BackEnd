@@ -26,7 +26,7 @@ public class NotificationController {
 
 	@GetMapping
 	public List<NotificationResponse> mine(Authentication authentication) {
-		var user = userRepository.findByUsername(authentication.getName())
+		var user = userRepository.findByEmail(authentication.getName())
 				.orElseThrow(() -> new NotFoundException("User not found"));
 		return notificationRepository.findByUserOrderByCreatedAtDesc(user).stream()
 				.map(NotificationResponse::fromEntity)

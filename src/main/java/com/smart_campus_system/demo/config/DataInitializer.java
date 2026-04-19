@@ -27,10 +27,10 @@ public class DataInitializer {
 
 	private static User user(String username, String email, Role role, PasswordEncoder encoder) {
 		User u = new User();
-		u.setUsername(username);
+		u.setFirstName(username);
 		u.setEmail(email);
 		u.setRole(role);
-		u.setPassword(encoder.encode("password"));
+		u.setPasswordHash(encoder.encode("password"));
 		return u;
 	}
 }

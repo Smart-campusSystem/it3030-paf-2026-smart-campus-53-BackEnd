@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
-import java.net.URL;
+import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +52,7 @@ class S3ProfileImageStorageTest {
 		S3ProfileImageStorage storage = new S3ProfileImageStorage(
 				s3Client, s3Presigner, "b", "profiles/", "", 60);
 		PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
-		when(presigned.url()).thenReturn(new URL("https://b.s3.ap-south-1.amazonaws.com/profiles/2/x.jpg?X-Amz-Signature=abc"));
+		when(presigned.url()).thenReturn(URI.create("https://b.s3.ap-south-1.amazonaws.com/profiles/2/x.jpg?X-Amz-Signature=abc").toURL());
 		when(s3Presigner.presignGetObject(isA(GetObjectPresignRequest.class))).thenReturn(presigned);
 
 		String out = storage.resolveDisplayUrl("s3://b/profiles/2/x.jpg");

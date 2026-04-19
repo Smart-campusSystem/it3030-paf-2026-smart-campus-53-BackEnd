@@ -5,7 +5,6 @@ import com.smart_campus_system.demo.dto.AuthRegisterRequest;
 import com.smart_campus_system.demo.dto.UserCreateRequest;
 import com.smart_campus_system.demo.exception.ApiException;
 import com.smart_campus_system.demo.model.Role;
-import com.smart_campus_system.demo.model.User;
 import com.smart_campus_system.demo.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

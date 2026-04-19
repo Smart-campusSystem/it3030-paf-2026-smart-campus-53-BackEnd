@@ -22,7 +22,7 @@ public class CommentSecurityService {
 		if (comment == null) {
 			return false;
 		}
-		var user = userRepository.findByUsername(username).orElse(null);
+		var user = userRepository.findByEmail(username).orElse(null);
 		if (user == null) {
 			return false;
 		}

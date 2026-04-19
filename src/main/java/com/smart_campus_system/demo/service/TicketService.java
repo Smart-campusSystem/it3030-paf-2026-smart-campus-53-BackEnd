@@ -88,7 +88,7 @@ public class TicketService {
 	@Transactional
 	public TicketResponse updateStatus(Long id, TicketStatusUpdateRequest request, Authentication authentication) {
 		Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new NotFoundException("Ticket not found"));
-		User actor = userRepository.findByUsername(authentication.getName())
+		User actor = userRepository.findByEmail(authentication.getName())
 				.orElseThrow(() -> new NotFoundException("User not found"));
 		TicketStatus previous = ticket.getStatus();
 		TicketStatus next = request.getStatus();
@@ -120,7 +120,7 @@ public class TicketService {
 	@Transactional
 	public TicketResponse addComment(Long ticketId, CommentCreateRequest request, Authentication authentication) {
 		Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new NotFoundException("Ticket not found"));
-		User author = userRepository.findByUsername(authentication.getName())
+		User author = userRepository.findByEmail(authentication.getName())
 				.orElseThrow(() -> new NotFoundException("User not found"));
 		TicketComment comment = new TicketComment();
 		comment.setTicket(ticket);
@@ -158,7 +158,7 @@ public class TicketService {
 	}
 
 	private void assertAuthorOrAdmin(TicketComment comment, String username) {
-		User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("User not found"));
+		User user = userRepository.findByEmail(username).orElseThrow(() -> new NotFoundException("User not found"));
 		if (user.getRole() == Role.ADMIN) {
 			return;
 		}
@@ -190,10 +190,10 @@ public class TicketService {
 		ticket.getAttachments().size();
 		ticket.getComments().size();
 		for (TicketComment c : ticket.getComments()) {
-			c.getAuthor().getUsername();
+			c.getAuthor().getEmail();
 		}
 		if (ticket.getAssignedTechnician() != null) {
-			ticket.getAssignedTechnician().getUsername();
+			ticket.getAssignedTechnician().getEmail();
 		}
 		return TicketResponse.fromEntity(ticket);
 	}

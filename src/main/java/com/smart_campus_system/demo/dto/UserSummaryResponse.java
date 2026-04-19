@@ -16,7 +16,7 @@ public class UserSummaryResponse {
 		}
 		UserSummaryResponse r = new UserSummaryResponse();
 		r.id = user.getId();
-		r.username = user.getUsername();
+		r.username = user.getFirstName();
 		r.email = user.getEmail();
 		r.role = user.getRole();
 		return r;

@@ -17,7 +17,7 @@ public class CommentResponse {
 		CommentResponse r = new CommentResponse();
 		r.id = c.getId();
 		r.text = c.getBody();
-		r.authorUsername = c.getAuthor().getUsername();
+		r.authorUsername = c.getAuthor().getEmail();
 		r.authorId = c.getAuthor().getId();
 		r.createdAt = c.getCreatedAt();
 		r.updatedAt = c.getUpdatedAt();

@@ -1,6 +1,5 @@
 package com.smart_campus_system.demo.exception;
 
-public class NotFoundException extends RuntimeException {
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -11,4 +10,3 @@ public class NotFoundException extends RuntimeException {
 		super(message);
 	}
 }
-

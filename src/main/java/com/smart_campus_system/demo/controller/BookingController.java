@@ -3,7 +3,7 @@ package com.smart_campus_system.demo.controller;
 import com.smart_campus_system.demo.config.AppConstants;
 import com.smart_campus_system.demo.dto.*;
 import com.smart_campus_system.demo.model.BookingStatus;
-import com.smart_campus_system.demo.model.UserRole;
+import com.smart_campus_system.demo.model.Role;
 import com.smart_campus_system.demo.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,10 +62,10 @@ public class BookingController {
             @RequestParam(required = false) Long resourceId,
             Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
-        UserRole role = authentication != null
+        Role role = authentication != null
                 && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
-                ? UserRole.ADMIN
-                : (authentication == null ? UserRole.ADMIN : UserRole.USER);
+                ? Role.ADMIN
+                : (authentication == null ? Role.ADMIN : Role.USER);
         List<BookingResponseDTO> bookings = bookingService.listBookings(email, role, status, from, to, date, resourceId);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -108,10 +108,10 @@ public class BookingController {
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<byte[]> getQr(@PathVariable Long id, Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
-        UserRole role = authentication != null
+        Role role = authentication != null
                 && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
-                ? UserRole.ADMIN
-                : (authentication == null ? UserRole.ADMIN : UserRole.USER);
+                ? Role.ADMIN
+                : (authentication == null ? Role.ADMIN : Role.USER);
         byte[] png = bookingService.getBookingQrPng(id, email, role);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
@@ -124,10 +124,10 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponseDTO>> getBookingById(@PathVariable Long id,
                                                                           Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
-        UserRole role = authentication != null
+        Role role = authentication != null
                 && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
-                ? UserRole.ADMIN
-                : (authentication == null ? UserRole.ADMIN : UserRole.USER);
+                ? Role.ADMIN
+                : (authentication == null ? Role.ADMIN : Role.USER);
         BookingResponseDTO booking = bookingService.getBookingById(id, email, role);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache())

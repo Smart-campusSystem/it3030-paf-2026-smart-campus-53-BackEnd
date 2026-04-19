@@ -20,7 +20,6 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,8 +74,8 @@ public class BookingService {
                     if (userEmail != null && userEmail.toLowerCase().endsWith(DEV_EMAIL_DOMAIN)) {
                         User demo = new User();
                         demo.setEmail(userEmail);
-                        demo.setName("Demo User");
-                        demo.setRole(UserRole.USER);
+                        demo.setFirstName("Demo User");
+                        demo.setRole(Role.USER);
                         return userRepository.save(demo);
                     }
                     throw new ResourceNotFoundException("User not found");
@@ -98,14 +97,14 @@ public class BookingService {
         log.info("Booking created with id: {}", saved.getId());
 
         BookingResponseDTO response = mapToResponse(saved, userEmail, user.getRole());
-        response = addLinks(response, saved, userEmail, user.getRole() == UserRole.ADMIN);
+        response = addLinks(response, saved, userEmail, user.getRole() == Role.ADMIN);
         log.info("Creating booking for user: {} done", userEmail);
         return response;
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> listBookings(String userEmail,
-                                                 UserRole role,
+                                                 Role role,
                                                  BookingStatus status,
                                                  LocalDate from,
                                                  LocalDate to,
@@ -126,13 +125,13 @@ public class BookingService {
         }
 
         List<Booking> bookings;
-        if (role == UserRole.ADMIN) {
+        if (role == Role.ADMIN) {
             bookings = bookingRepository.findAdminWithFilters(status, resourceId, fromStart, toEnd);
         } else {
             bookings = bookingRepository.findForUserWithFilters(userEmail, status, resourceId, fromStart, toEnd);
         }
 
-        boolean isAdmin = role == UserRole.ADMIN;
+        boolean isAdmin = role == Role.ADMIN;
         return bookings.stream()
                 .map(b -> addLinks(mapToResponse(b, userEmail, role), b, userEmail, isAdmin))
                 .toList();
@@ -143,7 +142,7 @@ public class BookingService {
      */
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getMyBookings(String userEmail) {
-        return listBookings(userEmail, UserRole.USER, null, null, null, null, null);
+        return listBookings(userEmail, Role.USER, null, null, null, null, null);
     }
 
     /**
@@ -159,24 +158,24 @@ public class BookingService {
         }
         List<Booking> bookings = bookingRepository.findAllWithFilters(status, date, startOfDay, endOfDay);
         return bookings.stream()
-                .map(b -> addLinks(mapToResponse(b, null, UserRole.ADMIN), b, null, true))
+                .map(b -> addLinks(mapToResponse(b, null, Role.ADMIN), b, null, true))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public BookingResponseDTO getBookingById(Long id, String userEmail, UserRole userRole) {
+    public BookingResponseDTO getBookingById(Long id, String userEmail, Role userRole) {
         log.info("Fetching booking by id: {} for {}", id, userEmail);
         Booking booking = bookingRepository.findByIdWithJoins(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        if (userRole == UserRole.USER) {
+        if (userRole == Role.USER) {
             if (booking.getUser() == null || booking.getUser().getEmail() == null
                     || !booking.getUser().getEmail().equalsIgnoreCase(userEmail)) {
                 throw new ForbiddenException("You do not have access to this booking");
             }
         }
 
-        boolean isAdmin = userRole == UserRole.ADMIN;
+        boolean isAdmin = userRole == Role.ADMIN;
         BookingResponseDTO result = addLinks(mapToResponse(booking, userEmail, userRole), booking, userEmail, isAdmin);
         log.info("Fetching booking by id: {} done", id);
         return result;
@@ -206,7 +205,7 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} approved", id);
-        return addLinks(mapToResponse(saved, null, UserRole.ADMIN), saved, null, true);
+        return addLinks(mapToResponse(saved, null, Role.ADMIN), saved, null, true);
     }
 
     @Transactional
@@ -225,7 +224,7 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} rejected with reason: {}", id, reason);
-        return addLinks(mapToResponse(saved, null, UserRole.ADMIN), saved, null, true);
+        return addLinks(mapToResponse(saved, null, Role.ADMIN), saved, null, true);
     }
 
     @Transactional
@@ -258,15 +257,15 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} cancelled", id);
-        return addLinks(mapToResponse(saved, userEmail, UserRole.USER), saved, userEmail, false);
+        return addLinks(mapToResponse(saved, userEmail, Role.USER), saved, userEmail, false);
     }
 
     @Transactional(readOnly = true)
-    public byte[] getBookingQrPng(Long id, String userEmail, UserRole userRole) {
+    public byte[] getBookingQrPng(Long id, String userEmail, Role userRole) {
         Booking booking = bookingRepository.findByIdWithJoins(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        if (userRole == UserRole.USER) {
+        if (userRole == Role.USER) {
             if (booking.getUser() == null || booking.getUser().getEmail() == null
                     || !booking.getUser().getEmail().equalsIgnoreCase(userEmail)) {
                 throw new ForbiddenException("You do not have access to this booking");
@@ -437,8 +436,8 @@ public class BookingService {
         String who = "—";
         User u = booking.getUser();
         if (u != null) {
-            if (u.getName() != null && !u.getName().isBlank()) {
-                who = u.getName().trim();
+            if (u.getFirstName() != null && !u.getFirstName().isBlank()) {
+                who = u.getFirstName().trim();
                 if (u.getEmail() != null && !u.getEmail().isBlank()) {
                     who = who + " (" + u.getEmail().trim() + ")";
                 }
@@ -469,7 +468,7 @@ public class BookingService {
                 && !end.toLocalTime().isAfter(AppConstants.RESOURCE_AVAILABLE_UNTIL);
     }
 
-    private BookingResponseDTO mapToResponse(Booking booking, String requesterEmail, UserRole requesterRole) {
+    private BookingResponseDTO mapToResponse(Booking booking, String requesterEmail, Role requesterRole) {
         BookingResponseDTO dto = new BookingResponseDTO();
         dto.setId(booking.getId());
 
@@ -481,9 +480,9 @@ public class BookingService {
         }
 
         if (booking.getUser() != null) {
-            dto.setUserName(booking.getUser().getName());
+            dto.setUserName(booking.getUser().getFirstName());
             dto.setUserEmail(booking.getUser().getEmail());
-            dto.setUserProfilePicture(booking.getUser().getProfilePicture());
+            dto.setUserProfilePicture(booking.getUser().getProfileImageUrl());
         }
 
         dto.setStartTime(booking.getStartTime());
@@ -507,7 +506,7 @@ public class BookingService {
                 && booking.getUser().getEmail().equalsIgnoreCase(requesterEmail);
 
         dto.setCanCancel(isOwner && (booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.APPROVED));
-        dto.setCanApprove(requesterRole == UserRole.ADMIN && booking.getStatus() == BookingStatus.PENDING);
+        dto.setCanApprove(requesterRole == Role.ADMIN && booking.getStatus() == BookingStatus.PENDING);
 
         return dto;
     }

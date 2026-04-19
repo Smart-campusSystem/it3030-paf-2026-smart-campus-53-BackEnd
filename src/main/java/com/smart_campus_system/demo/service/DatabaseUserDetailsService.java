@@ -18,7 +18,12 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		return userRepository.findByUsername(username)
+		com.smart_campus_system.demo.model.User user = userRepository.findByEmail(username)
 				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+		return org.springframework.security.core.userdetails.User.builder()
+				.username(user.getEmail())
+				.password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
+				.authorities("ROLE_" + user.getRole().name())
+				.build();
 	}
 }

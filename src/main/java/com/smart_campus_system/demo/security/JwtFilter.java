@@ -37,8 +37,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                String email = jwtUtil.getEmail(token);
-                String role = jwtUtil.getRole(token);
+                var claims = jwtUtil.parseAndValidate(token);
+                String email = claims.get("email", String.class);
+                String role = claims.get("role", String.class);
 
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     Optional<User> userOpt = userRepository.findByEmail(email);
@@ -59,31 +60,4 @@ public class JwtFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-	private final JwtUtil jwtUtil;
-	private final UserDetailsService userDetailsService;
-
-	public JwtFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
-		this.jwtUtil = jwtUtil;
-		this.userDetailsService = userDetailsService;
-	}
-
-	@Override
-	protected void doFilterInternal(
-			@NonNull HttpServletRequest request,
-			@NonNull HttpServletResponse response,
-			@NonNull FilterChain filterChain) throws ServletException, IOException {
-		String header = request.getHeader("Authorization");
-		if (header != null && header.startsWith("Bearer ")) {
-			String token = header.substring(7);
-			if (jwtUtil.validate(token)) {
-				String username = jwtUtil.getUsername(token);
-				UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-				var auth = new UsernamePasswordAuthenticationToken(
-						userDetails, null, userDetails.getAuthorities());
-				auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-				SecurityContextHolder.getContext().setAuthentication(auth);
-			}
-		}
-		filterChain.doFilter(request, response);
-	}
 }
