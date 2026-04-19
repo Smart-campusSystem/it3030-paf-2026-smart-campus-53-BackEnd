@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0"
-set DB_PASSWORD=1234
+set MYSQL_PASSWORD=1234
 echo.
 echo === Smart Campus API ===
 echo Starting Spring Boot on http://127.0.0.1:8080

@@ -1,13 +1,12 @@
-INSERT INTO resources (name, type, capacity, location, status, created_at)
+INSERT IGNORE INTO resources (name, type, capacity, location, availability, status)
 VALUES
-  ('Lecture Hall A', 'ROOM', 100, 'Main Building', 'ACTIVE', NOW()),
-  ('Meeting Room 1', 'ROOM', 10, 'Admin Block', 'ACTIVE', NOW()),
-  ('Computer Lab 1', 'LAB', 40, 'Engineering Faculty', 'ACTIVE', NOW()),
-  ('Projector', 'EQUIPMENT', 1, 'AV Store', 'ACTIVE', NOW()),
-  ('Camera', 'EQUIPMENT', 1, 'Media Unit', 'ACTIVE', NOW());
+  ('Lecture Hall A', 'ROOM', 100, 'Main Building', 'AVAILABLE', 'ACTIVE'),
+  ('Meeting Room 1', 'ROOM', 10, 'Admin Block', 'AVAILABLE', 'ACTIVE'),
+  ('Computer Lab 1', 'LAB', 40, 'Engineering Faculty', 'AVAILABLE', 'ACTIVE'),
+  ('Projector', 'EQUIPMENT', 1, 'AV Store', 'AVAILABLE', 'ACTIVE'),
+  ('Camera', 'EQUIPMENT', 1, 'Media Unit', 'AVAILABLE', 'ACTIVE');
 
-INSERT IGNORE INTO users (name, email, role, google_id, profile_picture, created_at)
+INSERT IGNORE INTO users (first_name, last_name, email, role, active)
 VALUES
-  ('Demo User', 'demo.user@smartcampus.local', 'USER', NULL, NULL, NOW()),
-  ('Demo Admin', 'demo.admin@smartcampus.local', 'ADMIN', NULL, NULL, NOW());
-
+  ('Demo', 'User', 'demo.user@smartcampus.local', 'USER', true),
+  ('Demo', 'Admin', 'demo.admin@smartcampus.local', 'ADMIN', true);
