@@ -31,7 +31,7 @@ public class BookingController {
     private static final String DEV_FALLBACK_USER_EMAIL = "demo.user@smartcampus.local";
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN','TECHNICIAN')")
     public ResponseEntity<ApiResponse<BookingResponseDTO>> createBooking(@Valid @RequestBody BookingRequestDTO dto,
                                                                          Authentication authentication) {
         String email = authentication != null ? authentication.getName() : DEV_FALLBACK_USER_EMAIL;
