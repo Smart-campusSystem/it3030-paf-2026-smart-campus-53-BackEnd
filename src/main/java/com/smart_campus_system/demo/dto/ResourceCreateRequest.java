@@ -1,57 +1,29 @@
-package com.smart_campus_system.demo.model;
+package com.smart_campus_system.demo.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.smart_campus_system.demo.model.ResourceStatus;
+import com.smart_campus_system.demo.model.ResourceType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Entity
-@Table(name = "resources")
-public class Resource {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-
+public class ResourceCreateRequest {
 	@NotBlank
-	@Column(nullable = false)
 	private String name;
 
 	@NotNull
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
 	private ResourceType type;
 
 	@Min(0)
-	@Column(nullable = true)
 	private Integer capacity;
 
 	@NotBlank
-	@Column(nullable = false)
 	private String location;
 
-	@NotBlank
-	@Column(nullable = false)
+	/** Optional on create; server applies a default when omitted or blank. */
 	private String availability;
 
 	@NotNull
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
 	private ResourceStatus status;
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
 
 	public String getName() {
 		return name;
@@ -101,3 +73,4 @@ public class Resource {
 		this.status = status;
 	}
 }
+
