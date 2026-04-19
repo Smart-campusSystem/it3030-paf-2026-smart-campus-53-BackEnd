@@ -1,0 +1,89 @@
+{
+  "info": {
+    "_postman_id": "b6f51e35-9c2b-4c1a-8cf1-0d3d2a3b2d1a",
+    "name": "Smart Campus - Module A (Resources)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Module A Resources endpoints (POST/GET/PATCH/DELETE) for PAF Assignment 2026."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "resourceId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Create Resource (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resources",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resources"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Lab A\",\n  \"type\": \"LAB\",\n  \"capacity\": 30,\n  \"location\": \"Building A - Floor 4\",\n  \"availability\": \"08:00-17:00\",\n  \"status\": \"ACTIVE\"\n}\n"
+        }
+      }
+    },
+    {
+      "name": "List/Search Resources (GET) - with filters",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/resources?type=LAB&location=Building%20A&minCapacity=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resources"],
+          "query": [
+            { "key": "type", "value": "LAB" },
+            { "key": "location", "value": "Building A" },
+            { "key": "minCapacity", "value": "20" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Resource By Id (GET)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/resources/{{resourceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resources", "{{resourceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Resource (PATCH) - status/out of service",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resources/{{resourceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resources", "{{resourceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"OUT_OF_SERVICE\",\n  \"availability\": \"09:00-16:00\"\n}\n"
+        }
+      }
+    },
+    {
+      "name": "Delete Resource (DELETE)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/api/resources/{{resourceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resources", "{{resourceId}}"]
+        }
+      }
+    }
+  ]
+}
+
