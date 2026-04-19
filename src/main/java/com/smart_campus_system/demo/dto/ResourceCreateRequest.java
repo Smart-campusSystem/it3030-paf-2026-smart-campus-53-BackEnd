@@ -19,7 +19,7 @@ public class ResourceCreateRequest {
 	@NotBlank
 	private String location;
 
-	@NotBlank
+	/** Optional on create; server applies a default when omitted or blank. */
 	private String availability;
 
 	@NotNull

@@ -28,7 +28,7 @@ public class ResourceService {
 		r.setType(req.getType());
 		r.setCapacity(req.getCapacity());
 		r.setLocation(req.getLocation().trim());
-		r.setAvailability(req.getAvailability().trim());
+		r.setAvailability(resolveAvailabilityForCreate(req.getAvailability()));
 		r.setStatus(req.getStatus());
 
 		Resource saved = resourceRepository.save(r);
@@ -76,6 +76,14 @@ public class ResourceService {
 	private Resource getEntity(Long id) {
 		return resourceRepository.findById(id)
 				.orElseThrow(() -> new NotFoundException("Resource not found: " + id));
+	}
+
+	private static String resolveAvailabilityForCreate(String availability) {
+		if (availability == null) {
+			return "N/A";
+		}
+		String t = availability.trim();
+		return t.isEmpty() ? "N/A" : t;
 	}
 
 	private static void validateCapacityRule(ResourceType type, Integer capacity) {
