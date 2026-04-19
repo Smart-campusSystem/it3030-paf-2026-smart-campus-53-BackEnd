@@ -1,10 +1,14 @@
 package com.smart_campus_system.demo.service;
 
+import java.time.LocalDateTime;
+
 import com.smart_campus_system.demo.dto.AuthLoginRequest;
 import com.smart_campus_system.demo.dto.AuthRegisterRequest;
 import com.smart_campus_system.demo.dto.UserCreateRequest;
 import com.smart_campus_system.demo.exception.ApiException;
+import com.smart_campus_system.demo.model.Otp;
 import com.smart_campus_system.demo.model.Role;
+import com.smart_campus_system.demo.repository.OtpRepository;
 import com.smart_campus_system.demo.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +30,28 @@ class UserServiceIntegrationTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private OtpRepository otpRepository;
+
+	private void seedOtp(String email, String code) {
+		String e = email.trim().toLowerCase();
+		otpRepository.deleteByEmail(e);
+		otpRepository.save(Otp.builder()
+				.email(e)
+				.code(code)
+				.expiresAt(LocalDateTime.now().plusMinutes(5))
+				.build());
+	}
+
 	@Test
 	void registerAssignsUserRole() {
+		seedOtp("new-user@example.com", "200001");
 		AuthRegisterRequest req = new AuthRegisterRequest();
 		req.setEmail("new-user@example.com");
 		req.setFirstName("N");
 		req.setLastName("U");
 		req.setPassword("password12");
+		req.setOtp("200001");
 
 		var res = userService.registerLocal(req);
 		assertThat(res.getUser().getRole()).isEqualTo(Role.USER);
@@ -66,11 +85,13 @@ class UserServiceIntegrationTest {
 
 	@Test
 	void loginWithPasswordWorksAfterGoogleLinkedToSameEmail() {
+		seedOtp("hybrid@example.com", "200002");
 		AuthRegisterRequest reg = new AuthRegisterRequest();
 		reg.setEmail("hybrid@example.com");
 		reg.setFirstName("H");
 		reg.setLastName("Y");
 		reg.setPassword("password12");
+		reg.setOtp("200002");
 		userService.registerLocal(reg);
 
 		userService.upsertFromOAuth("hybrid@example.com", "G", "User", "google", "google-sub-123");

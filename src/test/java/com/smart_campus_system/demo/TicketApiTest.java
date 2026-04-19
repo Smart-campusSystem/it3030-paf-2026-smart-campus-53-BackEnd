@@ -75,7 +75,7 @@ class TicketApiTest {
 				.andReturn();
 		long id = readId(created);
 		mockMvc.perform(put("/api/tickets/" + id + "/status")
-						.with(user("tech1").roles("TECHNICIAN"))
+						.with(user("tech1@campus.edu").roles("TECHNICIAN"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk())
@@ -95,7 +95,7 @@ class TicketApiTest {
 				.andReturn();
 		long id = readId(created);
 		mockMvc.perform(post("/api/tickets/" + id + "/comments")
-						.with(user("student1").roles("USER"))
+						.with(user("student1@campus.edu").roles("USER"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"text\":\"Additional details\"}"))
 				.andExpect(status().isOk())
@@ -115,7 +115,7 @@ class TicketApiTest {
 				.andReturn();
 		long id = readId(created);
 		mockMvc.perform(put("/api/tickets/" + id + "/assign")
-						.with(user("student1").roles("USER"))
+						.with(user("student1@campus.edu").roles("USER"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"technicianId\":2}"))
 				.andExpect(status().isForbidden());
@@ -134,7 +134,7 @@ class TicketApiTest {
 				.andReturn();
 		long id = readId(created);
 		mockMvc.perform(put("/api/tickets/" + id + "/assign")
-						.with(user("admin").roles("ADMIN"))
+						.with(user("admin@campus.edu").roles("ADMIN"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"technicianId\":2}"))
 				.andExpect(status().isOk())
@@ -154,7 +154,7 @@ class TicketApiTest {
 				.andReturn();
 		long ticketId = readId(created);
 		MvcResult afterComment = mockMvc.perform(post("/api/tickets/" + ticketId + "/comments")
-						.with(user("student1").roles("USER"))
+						.with(user("student1@campus.edu").roles("USER"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"text\":\"Owner comment\"}"))
 				.andExpect(status().isOk())
@@ -165,7 +165,7 @@ class TicketApiTest {
 				.path("id")
 				.asLong();
 		mockMvc.perform(delete("/api/tickets/" + ticketId + "/comments/" + commentId)
-						.with(user("tech1").roles("TECHNICIAN")))
+						.with(user("tech1@campus.edu").roles("TECHNICIAN")))
 				.andExpect(status().isForbidden());
 	}
 

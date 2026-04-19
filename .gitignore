@@ -16,6 +16,7 @@ yarn-error.log*
 # ================================
 # Java / Spring Boot (Backend)
 # ================================
+scripts/local-secrets.ps1
 target/
 *.log
 *.class

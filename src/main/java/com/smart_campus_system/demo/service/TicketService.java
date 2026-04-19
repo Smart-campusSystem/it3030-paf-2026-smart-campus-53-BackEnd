@@ -54,7 +54,8 @@ public class TicketService {
 			String contactName,
 			String contactEmail,
 			String contactPhone,
-			List<MultipartFile> images) {
+			List<MultipartFile> images,
+			Authentication authentication) {
 		Ticket ticket = new Ticket();
 		ticket.setCategory(category);
 		ticket.setDescription(description);
@@ -63,6 +64,9 @@ public class TicketService {
 		ticket.setContactEmail(contactEmail);
 		ticket.setContactPhone(contactPhone);
 		ticket.setStatus(TicketStatus.OPEN);
+		if (authentication != null && authentication.isAuthenticated() && authentication.getName() != null) {
+			userRepository.findByEmail(authentication.getName()).ifPresent(ticket::setSubmitter);
+		}
 		ticketRepository.save(ticket);
 		var attachments = fileStorageService.saveImages(ticket, images);
 		for (var a : attachments) {
@@ -81,6 +85,15 @@ public class TicketService {
 	public List<TicketSummaryResponse> listAll() {
 		return ticketRepository.findAll().stream()
 				.sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+				.map(TicketSummaryResponse::fromEntity)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<TicketSummaryResponse> listMine(Authentication authentication) {
+		User user = userRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new NotFoundException("User not found"));
+		return ticketRepository.findMine(user.getId(), user.getEmail()).stream()
 				.map(TicketSummaryResponse::fromEntity)
 				.toList();
 	}

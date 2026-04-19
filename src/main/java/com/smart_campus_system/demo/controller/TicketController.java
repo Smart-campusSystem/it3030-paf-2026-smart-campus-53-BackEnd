@@ -49,7 +49,8 @@ public class TicketController {
 			@RequestParam String contactName,
 			@RequestParam String contactEmail,
 			@RequestParam String contactPhone,
-			@RequestParam(value = "images", required = false) MultipartFile[] images) {
+			@RequestParam(value = "images", required = false) MultipartFile[] images,
+			Authentication authentication) {
 		List<MultipartFile> files = images == null
 				? List.of()
 				: Arrays.stream(images).filter(f -> f != null && !f.isEmpty()).toList();
@@ -60,12 +61,19 @@ public class TicketController {
 		catch (Exception ex) {
 			throw new CustomException("Invalid priority. Use LOW, MEDIUM, or HIGH");
 		}
-		return ticketService.create(category, description, p, contactName, contactEmail, contactPhone, files);
+		return ticketService.create(category, description, p, contactName, contactEmail, contactPhone, files, authentication);
 	}
 
+	/** Full queue: staff only. Regular users should use {@link #listMine(Authentication)}. */
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
 	public List<TicketSummaryResponse> list() {
 		return ticketService.listAll();
+	}
+
+	@GetMapping("/me")
+	public List<TicketSummaryResponse> listMine(Authentication authentication) {
+		return ticketService.listMine(authentication);
 	}
 
 	@GetMapping("/{id}")
