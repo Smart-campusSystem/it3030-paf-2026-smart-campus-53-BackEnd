@@ -25,6 +25,7 @@ public class NotificationService {
 	private final NotificationRepository notificationRepository;
 	private final UserRepository userRepository;
 	private final ObjectProvider<JavaMailSender> mailSenderProvider;
+	private final SseService sseService;
 
 	@Value("${spring.mail.host:}")
 	private String mailHost;
@@ -32,10 +33,12 @@ public class NotificationService {
 	public NotificationService(
 			NotificationRepository notificationRepository,
 			UserRepository userRepository,
-			ObjectProvider<JavaMailSender> mailSenderProvider) {
+			ObjectProvider<JavaMailSender> mailSenderProvider,
+			SseService sseService) {
 		this.notificationRepository = notificationRepository;
 		this.userRepository = userRepository;
 		this.mailSenderProvider = mailSenderProvider;
+		this.sseService = sseService;
 	}
 
 	@Transactional
@@ -63,12 +66,32 @@ public class NotificationService {
 	}
 
 	private void saveInApp(User user, String message, Long ticketId) {
-		Notification n = new Notification();
-		n.setUser(user);
-		n.setMessage(message);
-		n.setReadFlag(false);
-		n.setTicketId(ticketId);
+		Notification n = Notification.builder()
+				.userEmail(user.getEmail())
+				.message(message)
+				.isRead(false)
+				.type("INFO")
+				.ticketId(ticketId)
+				.createdAt(java.time.LocalDateTime.now())
+				.build();
 		notificationRepository.save(n);
+		// Also push real-time
+		sseService.send(user.getEmail(), n);
+	}
+
+	public void saveNewCommentNotification(Ticket ticket, User commentAuthor, String recipientEmail) {
+		String body = commentAuthor.getFirstName() + " commented on Ticket #" + ticket.getId()
+				+ ": \"" + (ticket.getCategory() != null ? ticket.getCategory() : "") + "\"";
+		Notification n = Notification.builder()
+				.userEmail(recipientEmail)
+				.message(body)
+				.isRead(false)
+				.type("INFO")
+				.ticketId(ticket.getId())
+				.createdAt(java.time.LocalDateTime.now())
+				.build();
+		notificationRepository.save(n);
+		sseService.send(recipientEmail, n);
 	}
 
 	private void sendEmail(String to, String subject, String text) {
@@ -92,5 +115,14 @@ public class NotificationService {
 		catch (Exception ex) {
 			log.warn("Could not send email to {}: {}", to, ex.getMessage());
 		}
+	}
+
+	@Transactional
+	public void process(Notification notification) {
+		// Save to DB
+		notificationRepository.save(notification);
+		
+		// Send real-time
+		sseService.send(notification.getUserEmail(), notification);
 	}
 }

@@ -29,24 +29,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			HttpServletRequest request,
 			HttpServletResponse response,
 			FilterChain filterChain) throws ServletException, IOException {
+
+		// 1) Try Authorization: Bearer <token> header first
+		String token = null;
 		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 		if (header != null && header.startsWith("Bearer ")) {
-			String token = header.substring(7).trim();
-			if (!token.isEmpty()) {
-				try {
-					Claims claims = jwtUtil.parseAndValidate(token);
-					Long userId = Long.parseLong(claims.getSubject());
-					String email = claims.get("email", String.class);
-					String role = claims.get("role", String.class);
-					var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-					var auth = new UsernamePasswordAuthenticationToken(
-							new UserPrincipal(userId, email), null, authorities);
-					SecurityContextHolder.getContext().setAuthentication(auth);
-				} catch (Exception ignored) {
-					SecurityContextHolder.clearContext();
-				}
+			String candidate = header.substring(7).trim();
+			if (!candidate.isEmpty()) token = candidate;
+		}
+
+		// 2) Fallback: ?access_token=<token> query param — used by SSE EventSource
+		//    because native EventSource cannot set custom headers
+		if (token == null) {
+			String queryToken = request.getParameter("access_token");
+			if (queryToken != null && !queryToken.isBlank()) {
+				token = queryToken.trim();
 			}
 		}
+
+		if (token != null) {
+			try {
+				Claims claims = jwtUtil.parseAndValidate(token);
+				Long userId = Long.parseLong(claims.getSubject());
+				String email = claims.get("email", String.class);
+				String role  = claims.get("role",  String.class);
+				var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+				var auth = new UsernamePasswordAuthenticationToken(
+						new UserPrincipal(userId, email), null, authorities);
+				SecurityContextHolder.getContext().setAuthentication(auth);
+			} catch (Exception ignored) {
+				SecurityContextHolder.clearContext();
+			}
+		}
+
 		filterChain.doFilter(request, response);
 	}
 }

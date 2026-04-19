@@ -34,8 +34,15 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = null;
+
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+            token = header.substring(7);
+        } else if (request.getParameter("access_token") != null) {
+            token = request.getParameter("access_token");
+        }
+
+        if (token != null) {
             try {
                 var claims = jwtUtil.parseAndValidate(token);
                 String email = claims.get("email", String.class);

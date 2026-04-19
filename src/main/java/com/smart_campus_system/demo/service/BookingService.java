@@ -1,5 +1,7 @@
 package com.smart_campus_system.demo.service;
 
+import com.smart_campus_system.demo.model.Notification;
+
 import com.smart_campus_system.demo.config.AppConstants;
 import com.smart_campus_system.demo.controller.BookingController;
 import com.smart_campus_system.demo.dto.*;
@@ -41,6 +43,7 @@ public class BookingService {
     private final ResourceRepository resourceRepository;
     private final UserRepository userRepository;
     private final QrCodeService qrCodeService;
+    private final NotificationService notificationService;
     private static final String DEV_EMAIL_DOMAIN = "@smartcampus.local";
 
     /**
@@ -205,6 +208,18 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} approved", id);
+
+        // Notify the booking owner about approval
+        if (saved.getUser() != null && saved.getUser().getEmail() != null) {
+            notificationService.process(Notification.builder()
+                    .message("Your booking for '" + saved.getResource().getName() + "' has been APPROVED.")
+                    .type("INFO")
+                    .userEmail(saved.getUser().getEmail())
+                    .isRead(false)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .build());
+        }
+
         return addLinks(mapToResponse(saved, null, Role.ADMIN), saved, null, true);
     }
 
@@ -224,6 +239,20 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} rejected with reason: {}", id, reason);
+
+        // Notify the booking owner about rejection
+        if (saved.getUser() != null && saved.getUser().getEmail() != null) {
+            String rejectMsg = "Your booking for '" + saved.getResource().getName() + "' has been REJECTED."
+                    + (reason != null && !reason.isBlank() ? " Reason: " + reason : "");
+            notificationService.process(Notification.builder()
+                    .message(rejectMsg)
+                    .type("WARNING")
+                    .userEmail(saved.getUser().getEmail())
+                    .isRead(false)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .build());
+        }
+
         return addLinks(mapToResponse(saved, null, Role.ADMIN), saved, null, true);
     }
 

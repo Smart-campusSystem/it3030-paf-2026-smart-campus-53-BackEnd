@@ -1,86 +1,34 @@
 package com.smart_campus_system.demo.model;
 
-import java.time.Instant;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "notifications")
 public class Notification {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "user_id")
-	private User user;
+    private String message;
 
-	@Column(nullable = false, length = 2000)
-	private String message;
+    private String type; // INFO, WARNING, ALERT
 
-	@Column(nullable = false)
-	private boolean readFlag;
+    private boolean isRead = false;
 
-	@Column(nullable = false)
-	private Instant createdAt = Instant.now();
+    private String userEmail;
 
-	@Column(nullable = false)
-	private Long ticketId;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-	public Long getId() {
-		return id;
-	}
+    // Keeping ticketId for backward compatibility
+    private Long ticketId;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public boolean isReadFlag() {
-		return readFlag;
-	}
-
-	public void setReadFlag(boolean readFlag) {
-		this.readFlag = readFlag;
-	}
-
-	public Instant getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(Instant createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public Long getTicketId() {
-		return ticketId;
-	}
-
-	public void setTicketId(Long ticketId) {
-		this.ticketId = ticketId;
-	}
+    // Tracks which admin created this notification (null = system-generated)
+    private String createdByEmail;
 }
