@@ -128,6 +128,18 @@ public class TicketService {
 		comment.setBody(request.getText());
 		ticket.getComments().add(comment);
 		commentRepository.save(comment);
+
+		// Notify ticket owner about new comment (if the commenter is not the owner)
+		String contactEmail = ticket.getContactEmail();
+		if (contactEmail != null && !contactEmail.equalsIgnoreCase(author.getEmail())) {
+			notificationService.saveNewCommentNotification(ticket, author, contactEmail);
+		}
+		// Also notify assigned technician if a different user commented
+		if (ticket.getAssignedTechnician() != null
+				&& !ticket.getAssignedTechnician().getEmail().equalsIgnoreCase(author.getEmail())) {
+			notificationService.saveNewCommentNotification(ticket, author, ticket.getAssignedTechnician().getEmail());
+		}
+
 		return loadTicketResponse(ticketId);
 	}
 

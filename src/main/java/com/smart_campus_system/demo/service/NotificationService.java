@@ -66,14 +66,32 @@ public class NotificationService {
 	}
 
 	private void saveInApp(User user, String message, Long ticketId) {
-		Notification n = new Notification();
-		n.setUserEmail(user.getEmail());
-		n.setMessage(message);
-		n.setRead(false);
-		n.setType("INFO");
-		n.setTicketId(ticketId);
-		n.setCreatedAt(java.time.LocalDateTime.now());
+		Notification n = Notification.builder()
+				.userEmail(user.getEmail())
+				.message(message)
+				.isRead(false)
+				.type("INFO")
+				.ticketId(ticketId)
+				.createdAt(java.time.LocalDateTime.now())
+				.build();
 		notificationRepository.save(n);
+		// Also push real-time
+		sseService.send(user.getEmail(), n);
+	}
+
+	public void saveNewCommentNotification(Ticket ticket, User commentAuthor, String recipientEmail) {
+		String body = commentAuthor.getFirstName() + " commented on Ticket #" + ticket.getId()
+				+ ": \"" + (ticket.getCategory() != null ? ticket.getCategory() : "") + "\"";
+		Notification n = Notification.builder()
+				.userEmail(recipientEmail)
+				.message(body)
+				.isRead(false)
+				.type("INFO")
+				.ticketId(ticket.getId())
+				.createdAt(java.time.LocalDateTime.now())
+				.build();
+		notificationRepository.save(n);
+		sseService.send(recipientEmail, n);
 	}
 
 	private void sendEmail(String to, String subject, String text) {

@@ -25,7 +25,10 @@ public class Notification {
     private String userEmail;
 
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    // Keeping ticketId for backward compatibility if needed by the existing codebase
+
+    // Keeping ticketId for backward compatibility
     private Long ticketId;
+
+    // Tracks which admin created this notification (null = system-generated)
+    private String createdByEmail;
 }
