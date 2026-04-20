@@ -4,7 +4,6 @@
 node_modules/
 build/
 dist/
-*.application.properties
 .env
 .env.local
 .env.development.local
