@@ -1,6 +1,8 @@
 @echo off
 cd /d "%~dp0"
 set MYSQL_PASSWORD=1234
+rem Persist to MySQL (same DB as Workbench). For in-memory H2 instead: set SPRING_PROFILES_ACTIVE=dev
+set SPRING_PROFILES_ACTIVE=mysql
 
 echo.
 echo === Smart Campus API ===
