@@ -27,7 +27,7 @@ A RESTful API backend for a university smart campus platform that manages users,
 | Language | Java 21 |
 | Framework | Spring Boot 4.0.5 |
 | Security | Spring Security · JJWT 0.12.6 · OAuth2 (Google) |
-| Database | MySQL 8 (primary) · H2 (dev/test) |
+| Database | MySQL 8 |
 | ORM | Spring Data JPA / Hibernate |
 | File Storage | AWS S3 (ap-south-1) |
 | Build Tool | Maven |
@@ -117,7 +117,7 @@ src/main/java/com/smart_campus_system/demo/
 ### Prerequisites
 - Java 21+
 - Maven 3.9+
-- MySQL 8 running locally (or configure H2 for dev — see below)
+- MySQL 8 running locally (`smartcampus` database; credentials via `MYSQL_*` or `application-mysql.properties`)
 - (Optional) AWS credentials for S3 profile images
 
 ### 1. Clone & configure
@@ -129,29 +129,15 @@ cd smart-campus-system-BackEnd
 
 Create a `.env` or set environment variables (see [Environment Variables](#-environment-variables)).
 
-### 2. Use H2 for quick local dev (no MySQL needed)
-
-In `src/main/resources/application.properties`, comment out the MySQL block and uncomment the H2 block:
-
-```properties
-# spring.datasource.url=jdbc:mysql://...   ← comment this out
-spring.datasource.url=jdbc:h2:mem:smartcampus;DB_CLOSE_DELAY=-1;MODE=MySQL
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.h2.console.enabled=true
-```
-
-### 3. Run
+### 2. Run
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
 API available at: **`http://localhost:8080`**
-H2 Console (dev only): **`http://localhost:8080/h2-console`**
 
-### 4. Seed Users (auto on startup)
+### 3. Seed Users (auto on startup)
 
 | Email | Password | Role |
 |-------|----------|------|
@@ -254,8 +240,7 @@ H2 Console (dev only): **`http://localhost:8080/h2-console`**
 
 ## 🗄️ Database
 
-- **Primary**: MySQL 8 with `ddl-auto=update` (auto-creates/updates tables)
-- **Dev/Test**: H2 in-memory (see Getting Started)
+- **MySQL 8** with `ddl-auto=update` (auto-creates/updates tables); default profile is `mysql` (`application-mysql.properties`).
 - Schema auto-generated from JPA entities via Hibernate
 
 > ⚠️ **Production note**: Replace `ddl-auto=update` with a migration tool (Flyway / Liquibase) before deploying to production.

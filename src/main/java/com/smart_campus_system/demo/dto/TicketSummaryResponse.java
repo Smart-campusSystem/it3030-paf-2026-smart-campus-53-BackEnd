@@ -14,6 +14,8 @@ public class TicketSummaryResponse {
 	private TicketPriority priority;
 	private TicketStatus status;
 	private String contactName;
+	private String contactEmail;
+	private String contactPhone;
 	private UserSummaryResponse assignedTechnician;
 	private Instant createdAt;
 
@@ -25,6 +27,8 @@ public class TicketSummaryResponse {
 		r.priority = t.getPriority();
 		r.status = t.getStatus();
 		r.contactName = t.getContactName();
+		r.contactEmail = t.getContactEmail();
+		r.contactPhone = t.getContactPhone();
 		r.assignedTechnician = UserSummaryResponse.fromEntity(t.getAssignedTechnician());
 		r.createdAt = t.getCreatedAt();
 		return r;
@@ -52,6 +56,14 @@ public class TicketSummaryResponse {
 
 	public String getContactName() {
 		return contactName;
+	}
+
+	public String getContactEmail() {
+		return contactEmail;
+	}
+
+	public String getContactPhone() {
+		return contactPhone;
 	}
 
 	public UserSummaryResponse getAssignedTechnician() {

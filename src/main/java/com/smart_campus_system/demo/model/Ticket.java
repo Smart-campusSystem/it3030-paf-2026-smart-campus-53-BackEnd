@@ -54,6 +54,11 @@ public class Ticket {
 	@JoinColumn(name = "assigned_technician_id")
 	private User assignedTechnician;
 
+	/** Logged-in user who submitted the ticket (optional for legacy rows). */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "submitter_id")
+	private User submitter;
+
 	@Column(nullable = false)
 	private Instant createdAt = Instant.now();
 
@@ -134,6 +139,14 @@ public class Ticket {
 
 	public void setAssignedTechnician(User assignedTechnician) {
 		this.assignedTechnician = assignedTechnician;
+	}
+
+	public User getSubmitter() {
+		return submitter;
+	}
+
+	public void setSubmitter(User submitter) {
+		this.submitter = submitter;
 	}
 
 	public Instant getCreatedAt() {
