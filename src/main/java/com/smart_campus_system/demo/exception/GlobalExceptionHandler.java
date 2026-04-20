@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +73,23 @@ public class GlobalExceptionHandler {
         String msg = "Invalid parameter" + (param != null ? " '" + param + "'" : "")
                 + (value != null ? ": " + value : "");
         return buildError(HttpStatus.BAD_REQUEST, msg, request, null);
+    }
+
+    /**
+     * MVC wraps controller failures (e.g. {@link NoSuchMethodError}) in {@link ServletException}. A common case is a
+     * stale {@code target/classes} after entity changes — always run {@code mvnw clean spring-boot:run}.
+     */
+    @ExceptionHandler(ServletException.class)
+    public ResponseEntity<Map<String, Object>> handleServletDispatch(ServletException ex, HttpServletRequest request) {
+        Throwable root = ex.getRootCause() != null ? ex.getRootCause() : ex;
+        if (root instanceof LinkageError) {
+            log.error("Linkage/stale bytecode for {} {} — run mvn clean spring-boot:run", request.getMethod(), request.getRequestURI(), root);
+            return buildError(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Backend build is out of date (class mismatch). Stop the API, open a terminal in smart-campus-system-BackEnd, then run: .\\mvnw.cmd clean spring-boot:run",
+                    request, null);
+        }
+        log.error("Servlet dispatch failed for {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request, null);
     }
 
     @ExceptionHandler(Exception.class)

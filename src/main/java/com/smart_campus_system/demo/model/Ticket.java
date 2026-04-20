@@ -17,6 +17,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -61,6 +63,10 @@ public class Ticket {
 
 	@Column(nullable = false)
 	private Instant createdAt = Instant.now();
+
+	/** Last modification time (status, assignment, comments, etc.). */
+	@Column(name = "updated_at")
+	private Instant updatedAt;
 
 	@OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<TicketAttachment> attachments = new ArrayList<>();
@@ -155,6 +161,30 @@ public class Ticket {
 
 	public void setCreatedAt(Instant createdAt) {
 		this.createdAt = createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	@PrePersist
+	void onPersist() {
+		Instant now = Instant.now();
+		if (updatedAt == null) {
+			updatedAt = createdAt != null ? createdAt : now;
+		}
+		if (createdAt == null) {
+			createdAt = now;
+		}
+	}
+
+	@PreUpdate
+	void onUpdate() {
+		updatedAt = Instant.now();
 	}
 
 	public List<TicketAttachment> getAttachments() {

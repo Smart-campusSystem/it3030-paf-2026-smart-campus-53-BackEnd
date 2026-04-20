@@ -14,5 +14,5 @@ if (-not (Test-Path $secretsPath)) {
 Set-Location $BackendRoot
 . $secretsPath
 
-Write-Host "Starting Spring Boot (backend: $BackendRoot)..." -ForegroundColor Cyan
-& .\mvnw.cmd @('spring-boot:run')
+Write-Host "Starting Spring Boot with a clean compile (avoids stale Ticket/entity bytecode)..." -ForegroundColor Cyan
+& .\mvnw.cmd @('clean', 'spring-boot:run')

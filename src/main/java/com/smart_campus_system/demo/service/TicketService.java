@@ -1,8 +1,12 @@
 package com.smart_campus_system.demo.service;
 
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,6 +16,7 @@ import com.smart_campus_system.demo.dto.CommentCreateRequest;
 import com.smart_campus_system.demo.dto.TicketResponse;
 import com.smart_campus_system.demo.dto.TicketStatusUpdateRequest;
 import com.smart_campus_system.demo.dto.TicketSummaryResponse;
+import com.smart_campus_system.demo.exception.ApiException;
 import com.smart_campus_system.demo.exception.CustomException;
 import com.smart_campus_system.demo.exception.NotFoundException;
 import com.smart_campus_system.demo.model.Role;
@@ -23,6 +28,7 @@ import com.smart_campus_system.demo.model.User;
 import com.smart_campus_system.demo.repository.TicketCommentRepository;
 import com.smart_campus_system.demo.repository.TicketRepository;
 import com.smart_campus_system.demo.repository.UserRepository;
+import com.smart_campus_system.demo.security.UserPrincipal;
 
 @Service
 public class TicketService {
@@ -64,9 +70,7 @@ public class TicketService {
 		ticket.setContactEmail(contactEmail);
 		ticket.setContactPhone(contactPhone);
 		ticket.setStatus(TicketStatus.OPEN);
-		if (authentication != null && authentication.isAuthenticated() && authentication.getName() != null) {
-			userRepository.findByEmail(authentication.getName()).ifPresent(ticket::setSubmitter);
-		}
+		tryResolveUser(authentication).ifPresent(ticket::setSubmitter);
 		ticketRepository.save(ticket);
 		var attachments = fileStorageService.saveImages(ticket, images);
 		for (var a : attachments) {
@@ -83,16 +87,14 @@ public class TicketService {
 
 	@Transactional(readOnly = true)
 	public List<TicketSummaryResponse> listAll() {
-		return ticketRepository.findAll().stream()
-				.sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+		return ticketRepository.findAllByOrderByCreatedAtDesc().stream()
 				.map(TicketSummaryResponse::fromEntity)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public List<TicketSummaryResponse> listMine(Authentication authentication) {
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new NotFoundException("User not found"));
+		User user = requireSignedInUser(authentication);
 		return ticketRepository.findMine(user.getId(), user.getEmail()).stream()
 				.map(TicketSummaryResponse::fromEntity)
 				.toList();
@@ -101,8 +103,7 @@ public class TicketService {
 	@Transactional
 	public TicketResponse updateStatus(Long id, TicketStatusUpdateRequest request, Authentication authentication) {
 		Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new NotFoundException("Ticket not found"));
-		User actor = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new NotFoundException("User not found"));
+		User actor = requireSignedInUser(authentication);
 		TicketStatus previous = ticket.getStatus();
 		TicketStatus next = request.getStatus();
 		if (!isTransitionAllowed(previous, next, actor.getRole())) {
@@ -133,8 +134,7 @@ public class TicketService {
 	@Transactional
 	public TicketResponse addComment(Long ticketId, CommentCreateRequest request, Authentication authentication) {
 		Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new NotFoundException("Ticket not found"));
-		User author = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new NotFoundException("User not found"));
+		User author = requireSignedInUser(authentication);
 		TicketComment comment = new TicketComment();
 		comment.setTicket(ticket);
 		comment.setAuthor(author);
@@ -148,7 +148,8 @@ public class TicketService {
 	public TicketResponse updateComment(Long ticketId, Long commentId, CommentCreateRequest request, Authentication authentication) {
 		ensureTicketMatch(ticketId, commentId);
 		TicketComment comment = commentRepository.findById(commentId).orElseThrow(() -> new NotFoundException("Comment not found"));
-		assertAuthorOrAdmin(comment, authentication.getName());
+		User actor = requireSignedInUser(authentication);
+		assertAuthorOrAdmin(comment, actor.getEmail());
 		comment.setBody(request.getText());
 		comment.setUpdatedAt(java.time.Instant.now());
 		commentRepository.save(comment);
@@ -159,8 +160,31 @@ public class TicketService {
 	public void deleteComment(Long ticketId, Long commentId, Authentication authentication) {
 		ensureTicketMatch(ticketId, commentId);
 		TicketComment comment = commentRepository.findById(commentId).orElseThrow(() -> new NotFoundException("Comment not found"));
-		assertAuthorOrAdmin(comment, authentication.getName());
+		User actor = requireSignedInUser(authentication);
+		assertAuthorOrAdmin(comment, actor.getEmail());
 		commentRepository.delete(comment);
+	}
+
+	/**
+	 * Admins may delete any ticket. Other signed-in users may delete only their own ticket while it is still {@link TicketStatus#OPEN}.
+	 */
+	@Transactional
+	public void deleteTicket(Long id, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new NotFoundException("Ticket not found"));
+		User actor = requireSignedInUser(authentication);
+		boolean admin = actor.getRole() == Role.ADMIN;
+		boolean submitterMatch = ticket.getSubmitter() != null && ticket.getSubmitter().getId().equals(actor.getId());
+		boolean legacyReporter = ticket.getSubmitter() == null
+				&& ticket.getContactEmail() != null
+				&& actor.getEmail() != null
+				&& ticket.getContactEmail().trim().equalsIgnoreCase(actor.getEmail().trim());
+		if (!admin && !submitterMatch && !legacyReporter) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "You can only delete tickets you submitted");
+		}
+		if (!admin && ticket.getStatus() != TicketStatus.OPEN) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Only open tickets can be deleted. Contact staff if you need this ticket closed.");
+		}
+		ticketRepository.delete(ticket);
 	}
 
 	private void ensureTicketMatch(Long ticketId, Long commentId) {
@@ -170,8 +194,8 @@ public class TicketService {
 		}
 	}
 
-	private void assertAuthorOrAdmin(TicketComment comment, String username) {
-		User user = userRepository.findByEmail(username).orElseThrow(() -> new NotFoundException("User not found"));
+	private void assertAuthorOrAdmin(TicketComment comment, String actorEmail) {
+		User user = userRepository.findByEmail(actorEmail).orElseThrow(() -> new NotFoundException("User not found"));
 		if (user.getRole() == Role.ADMIN) {
 			return;
 		}
@@ -198,6 +222,45 @@ public class TicketService {
 		};
 	}
 
+	/**
+	 * Resolves the campus {@link User} from JWT ({@link UserPrincipal}), OAuth2 login, or standard
+	 * {@link UserDetails#getUsername()} (tests / form login). {@link Authentication#getName()} alone is not reliable
+	 * for OAuth2 principals.
+	 */
+	private Optional<User> tryResolveUser(Authentication authentication) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return Optional.empty();
+		}
+		Object principal = authentication.getPrincipal();
+		if (principal instanceof UserPrincipal up) {
+			return userRepository.findById(up.id());
+		}
+		if (principal instanceof OAuth2User ou) {
+			String email = ou.getAttribute("email");
+			if (email != null && !email.isBlank()) {
+				return userRepository.findByEmail(email.trim());
+			}
+		}
+		if (principal instanceof UserDetails ud) {
+			String username = ud.getUsername();
+			if (username != null && !username.isBlank() && !"anonymousUser".equals(username)) {
+				return userRepository.findByEmail(username);
+			}
+		}
+		String name = authentication.getName();
+		if (name != null && !name.isBlank() && !"anonymousUser".equals(name)) {
+			return userRepository.findByEmail(name);
+		}
+		return Optional.empty();
+	}
+
+	private User requireSignedInUser(Authentication authentication) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			throw new ApiException(HttpStatus.UNAUTHORIZED, "Sign in required");
+		}
+		return tryResolveUser(authentication).orElseThrow(() -> new NotFoundException("User not found"));
+	}
+
 	private TicketResponse loadTicketResponse(Long id) {
 		Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new NotFoundException("Ticket not found"));
 		ticket.getAttachments().size();
@@ -207,6 +270,9 @@ public class TicketService {
 		}
 		if (ticket.getAssignedTechnician() != null) {
 			ticket.getAssignedTechnician().getEmail();
+		}
+		if (ticket.getSubmitter() != null) {
+			ticket.getSubmitter().getEmail();
 		}
 		return TicketResponse.fromEntity(ticket);
 	}

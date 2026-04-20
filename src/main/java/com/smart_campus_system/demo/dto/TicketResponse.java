@@ -18,6 +18,8 @@ public class TicketResponse {
 	private String contactEmail;
 	private String contactPhone;
 	private UserSummaryResponse assignedTechnician;
+	/** Present when the ticket was filed by a signed-in user (null for anonymous-only rows). */
+	private UserSummaryResponse submitter;
 	private Instant createdAt;
 	private List<AttachmentResponse> attachments;
 	private List<CommentResponse> comments;
@@ -33,6 +35,7 @@ public class TicketResponse {
 		r.contactEmail = t.getContactEmail();
 		r.contactPhone = t.getContactPhone();
 		r.assignedTechnician = UserSummaryResponse.fromEntity(t.getAssignedTechnician());
+		r.submitter = UserSummaryResponse.fromEntity(t.getSubmitter());
 		r.createdAt = t.getCreatedAt();
 		r.attachments = t.getAttachments().stream().map(AttachmentResponse::fromEntity).toList();
 		r.comments = t.getComments().stream().map(CommentResponse::fromEntity).toList();
@@ -73,6 +76,10 @@ public class TicketResponse {
 
 	public UserSummaryResponse getAssignedTechnician() {
 		return assignedTechnician;
+	}
+
+	public UserSummaryResponse getSubmitter() {
+		return submitter;
 	}
 
 	public Instant getCreatedAt() {

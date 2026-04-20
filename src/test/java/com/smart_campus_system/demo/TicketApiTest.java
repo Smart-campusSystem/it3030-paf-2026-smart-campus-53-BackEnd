@@ -32,6 +32,24 @@ class TicketApiTest {
 	private MockMvc mockMvc;
 
 	@Test
+	void listAllTickets_forbiddenForStudent() throws Exception {
+		mockMvc.perform(get("/api/tickets").with(user("student1@campus.edu").roles("USER")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void listAllTickets_okForTechnician() throws Exception {
+		mockMvc.perform(get("/api/tickets").with(user("tech1@campus.edu").roles("TECHNICIAN")))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void listMyTickets_okForSignedInUser() throws Exception {
+		mockMvc.perform(get("/api/tickets/me").with(user("student1@campus.edu").roles("USER")))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void createTicket_withoutAuth_returnsCreated() throws Exception {
 		mockMvc.perform(multipart("/api/tickets")
 						.param("category", "Equipment malfunction")
@@ -139,6 +157,65 @@ class TicketApiTest {
 						.content("{\"technicianId\":2}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.assignedTechnician.username").value("tech1"));
+	}
+
+	@Test
+	void deleteTicket_submitterWhenOpen_returns204() throws Exception {
+		MvcResult created = mockMvc.perform(multipart("/api/tickets")
+						.with(user("student1@campus.edu").roles("USER"))
+						.param("category", "Other")
+						.param("description", "To delete")
+						.param("priority", "LOW")
+						.param("contactName", "Student One")
+						.param("contactEmail", "student1@campus.edu")
+						.param("contactPhone", "555-0001"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.submitter.email").value("student1@campus.edu"))
+				.andReturn();
+		long ticketId = readId(created);
+		mockMvc.perform(delete("/api/tickets/" + ticketId).with(user("student1@campus.edu").roles("USER")))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/tickets/" + ticketId))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void deleteTicket_forbiddenForOtherUser() throws Exception {
+		MvcResult created = mockMvc.perform(multipart("/api/tickets")
+						.with(user("student1@campus.edu").roles("USER"))
+						.param("category", "Other")
+						.param("description", "Private")
+						.param("priority", "LOW")
+						.param("contactName", "S1")
+						.param("contactEmail", "student1@campus.edu")
+						.param("contactPhone", "1"))
+				.andExpect(status().isCreated())
+				.andReturn();
+		long ticketId = readId(created);
+		mockMvc.perform(delete("/api/tickets/" + ticketId).with(user("tech2@campus.edu").roles("TECHNICIAN")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void deleteTicket_submitterForbiddenWhenInProgress() throws Exception {
+		MvcResult created = mockMvc.perform(multipart("/api/tickets")
+						.with(user("student1@campus.edu").roles("USER"))
+						.param("category", "Other")
+						.param("description", "In progress soon")
+						.param("priority", "LOW")
+						.param("contactName", "S1")
+						.param("contactEmail", "student1@campus.edu")
+						.param("contactPhone", "1"))
+				.andExpect(status().isCreated())
+				.andReturn();
+		long ticketId = readId(created);
+		mockMvc.perform(put("/api/tickets/" + ticketId + "/status")
+						.with(user("tech1@campus.edu").roles("TECHNICIAN"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"IN_PROGRESS\"}"))
+				.andExpect(status().isOk());
+		mockMvc.perform(delete("/api/tickets/" + ticketId).with(user("student1@campus.edu").roles("USER")))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test

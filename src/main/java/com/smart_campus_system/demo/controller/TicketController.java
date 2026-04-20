@@ -76,12 +76,19 @@ public class TicketController {
 		return ticketService.listMine(authentication);
 	}
 
-	@GetMapping("/{id}")
+	/** Numeric id only so {@code /me} is never captured as a path variable. */
+	@GetMapping("/{id:\\d+}")
 	public TicketResponse get(@PathVariable Long id) {
 		return ticketService.get(id);
 	}
 
-	@PutMapping("/{id}/status")
+	@DeleteMapping("/{id:\\d+}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void delete(@PathVariable Long id, Authentication authentication) {
+		ticketService.deleteTicket(id, authentication);
+	}
+
+	@PutMapping("/{id:\\d+}/status")
 	@PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
 	public TicketResponse updateStatus(
 			@PathVariable Long id,
@@ -90,7 +97,7 @@ public class TicketController {
 		return ticketService.updateStatus(id, body, authentication);
 	}
 
-	@PutMapping("/{id}/assign")
+	@PutMapping("/{id:\\d+}/assign")
 	@PreAuthorize("hasRole('ADMIN')")
 	public TicketResponse assign(
 			@PathVariable Long id,
@@ -98,7 +105,7 @@ public class TicketController {
 		return ticketService.assignTechnician(id, body);
 	}
 
-	@PostMapping("/{ticketId}/comments")
+	@PostMapping("/{ticketId:\\d+}/comments")
 	public TicketResponse addComment(
 			@PathVariable Long ticketId,
 			@Valid @RequestBody CommentCreateRequest body,
@@ -106,7 +113,7 @@ public class TicketController {
 		return ticketService.addComment(ticketId, body, authentication);
 	}
 
-	@PutMapping("/{ticketId}/comments/{commentId}")
+	@PutMapping("/{ticketId:\\d+}/comments/{commentId:\\d+}")
 	@PreAuthorize("@commentSecurity.canModify(#commentId, authentication.name)")
 	public TicketResponse updateComment(
 			@PathVariable Long ticketId,
@@ -116,7 +123,7 @@ public class TicketController {
 		return ticketService.updateComment(ticketId, commentId, body, authentication);
 	}
 
-	@DeleteMapping("/{ticketId}/comments/{commentId}")
+	@DeleteMapping("/{ticketId:\\d+}/comments/{commentId:\\d+}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@PreAuthorize("@commentSecurity.canModify(#commentId, authentication.name)")
 	public void deleteComment(
