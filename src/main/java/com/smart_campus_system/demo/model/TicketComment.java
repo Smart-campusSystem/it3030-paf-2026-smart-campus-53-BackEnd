@@ -13,28 +13,29 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "notifications")
-public class Notification {
+@Table(name = "ticket_comments")
+public class TicketComment {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "user_id")
-	private User user;
+	@JoinColumn(name = "ticket_id")
+	private Ticket ticket;
 
-	@Column(nullable = false, length = 2000)
-	private String message;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "author_id")
+	private User author;
 
-	@Column(nullable = false)
-	private boolean readFlag;
+	@Column(nullable = false, length = 4000)
+	private String body;
 
 	@Column(nullable = false)
 	private Instant createdAt = Instant.now();
 
 	@Column(nullable = false)
-	private Long ticketId;
+	private Instant updatedAt = Instant.now();
 
 	public Long getId() {
 		return id;
@@ -44,28 +45,28 @@ public class Notification {
 		this.id = id;
 	}
 
-	public User getUser() {
-		return user;
+	public Ticket getTicket() {
+		return ticket;
 	}
 
-	public void setUser(User user) {
-		this.user = user;
+	public void setTicket(Ticket ticket) {
+		this.ticket = ticket;
 	}
 
-	public String getMessage() {
-		return message;
+	public User getAuthor() {
+		return author;
 	}
 
-	public void setMessage(String message) {
-		this.message = message;
+	public void setAuthor(User author) {
+		this.author = author;
 	}
 
-	public boolean isReadFlag() {
-		return readFlag;
+	public String getBody() {
+		return body;
 	}
 
-	public void setReadFlag(boolean readFlag) {
-		this.readFlag = readFlag;
+	public void setBody(String body) {
+		this.body = body;
 	}
 
 	public Instant getCreatedAt() {
@@ -76,11 +77,11 @@ public class Notification {
 		this.createdAt = createdAt;
 	}
 
-	public Long getTicketId() {
-		return ticketId;
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 
-	public void setTicketId(Long ticketId) {
-		this.ticketId = ticketId;
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 }
