@@ -7,8 +7,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * JWT-backed principal. Implements {@link UserDetails} so {@link org.springframework.security.core.Authentication#getName()}
- * returns the email (via {@link #getUsername()}), not {@code toString()}. Booking and other controllers use {@code getName()}
+ * JWT-backed principal. Implements {@link UserDetails} so
+ * {@link org.springframework.security.core.Authentication#getName()}
+ * returns the email (via {@link #getUsername()}), not {@code toString()}.
+ * Booking and other controllers use {@code getName()}
  * to resolve the current user's email.
  */
 public record UserPrincipal(Long id, String email) implements UserDetails {
