@@ -37,7 +37,7 @@ public class SecurityConfig {
 				.cors(Customizer.withDefaults())
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/**", "/error").permitAll()
+						.requestMatchers("/api/auth/**", "/api/health", "/oauth2/**", "/login/oauth2/**", "/error").permitAll()
 						// Anonymous maintenance requests and public ticket lookup (method security still applies on controllers).
 						.requestMatchers(HttpMethod.POST, "/api/tickets").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/tickets/{id:\\d+}").permitAll()

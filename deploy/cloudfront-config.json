@@ -1,0 +1,145 @@
+{
+  "_documentation": [
+    "Smart Campus System — CloudFront Distribution Configuration",
+    "",
+    "This describes the CloudFront setup. Create this via AWS Console or CLI.",
+    "Region: ap-south-1 (Mumbai) for origins, CloudFront is global."
+  ],
+
+  "distribution": {
+    "comment": "Smart Campus System CDN",
+    "price_class": "PriceClass_100",
+    "default_root_object": "index.html",
+    "enabled": true,
+    "http_version": "http2and3",
+
+    "origins": {
+      "frontend_s3": {
+        "id": "S3-smart-campus-frontend",
+        "domain_name": "smart-campus-frontend-<YOUR-ID>.s3.ap-south-1.amazonaws.com",
+        "origin_access_control": {
+          "note": "Create an OAC in CloudFront → Origins → Origin Access Control settings",
+          "signing_protocol": "sigv4",
+          "signing_behavior": "always",
+          "origin_type": "s3"
+        }
+      },
+      "backend_ec2": {
+        "id": "EC2-smart-campus-backend",
+        "domain_name": "<EC2-ELASTIC-IP>",
+        "custom_origin_config": {
+          "http_port": 8080,
+          "https_port": 443,
+          "origin_protocol_policy": "http-only",
+          "origin_ssl_protocols": ["TLSv1.2"]
+        }
+      },
+      "images_s3": {
+        "id": "S3-smart-campus-images",
+        "domain_name": "smart-campus-images-b2.s3.ap-south-1.amazonaws.com",
+        "origin_access_control": {
+          "note": "Same OAC type as frontend S3 bucket",
+          "signing_protocol": "sigv4",
+          "signing_behavior": "always",
+          "origin_type": "s3"
+        }
+      }
+    },
+
+    "cache_behaviors": {
+      "api_requests": {
+        "path_pattern": "/api/*",
+        "target_origin_id": "EC2-smart-campus-backend",
+        "viewer_protocol_policy": "redirect-to-https",
+        "allowed_methods": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+        "cached_methods": ["GET", "HEAD"],
+        "cache_policy": "CachingDisabled (AWS Managed - 4135ea2d-6df8-44a3-9df3-4b5a84be39ad)",
+        "origin_request_policy": "AllViewerExceptHostHeader (AWS Managed - b689b0a8-53d0-40ab-baf2-68738e2966ac)",
+        "compress": false,
+        "note": "API calls must NOT be cached — always pass through to EC2"
+      },
+      "oauth2_requests": {
+        "path_pattern": "/oauth2/*",
+        "target_origin_id": "EC2-smart-campus-backend",
+        "viewer_protocol_policy": "redirect-to-https",
+        "allowed_methods": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+        "cache_policy": "CachingDisabled",
+        "origin_request_policy": "AllViewerExceptHostHeader",
+        "note": "OAuth2 login flow must pass through to Spring Boot"
+      },
+      "login_oauth2_requests": {
+        "path_pattern": "/login/oauth2/*",
+        "target_origin_id": "EC2-smart-campus-backend",
+        "viewer_protocol_policy": "redirect-to-https",
+        "allowed_methods": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+        "cache_policy": "CachingDisabled",
+        "origin_request_policy": "AllViewerExceptHostHeader",
+        "note": "Spring Security OAuth2 callback endpoint"
+      },
+      "profile_images": {
+        "path_pattern": "/Profile-images/*",
+        "target_origin_id": "S3-smart-campus-images",
+        "viewer_protocol_policy": "redirect-to-https",
+        "allowed_methods": ["GET", "HEAD"],
+        "cache_policy": "CachingOptimized (AWS Managed - 658327ea-f89d-4fab-a63d-7e88639e58f6)",
+        "compress": true,
+        "note": "Profile images cached at edge for performance"
+      },
+      "default": {
+        "path_pattern": "*",
+        "target_origin_id": "S3-smart-campus-frontend",
+        "viewer_protocol_policy": "redirect-to-https",
+        "allowed_methods": ["GET", "HEAD"],
+        "cache_policy": "CachingOptimized",
+        "compress": true,
+        "note": "Default: serve frontend static files from S3"
+      }
+    },
+
+    "custom_error_responses": [
+      {
+        "error_code": 403,
+        "response_code": 200,
+        "response_page_path": "/index.html",
+        "error_caching_min_ttl": 10,
+        "note": "SPA fallback — S3 returns 403 for unknown paths; remap to index.html for client-side routing"
+      },
+      {
+        "error_code": 404,
+        "response_code": 200,
+        "response_page_path": "/index.html",
+        "error_caching_min_ttl": 10,
+        "note": "SPA fallback for 404s"
+      }
+    ],
+
+    "ssl_certificate": {
+      "note": "CloudFront provides free default SSL cert for *.cloudfront.net domains",
+      "type": "Default CloudFront Certificate",
+      "minimum_protocol_version": "TLSv1.2_2021"
+    }
+  },
+
+  "s3_bucket_policy_for_oac": {
+    "note": "Apply this policy to BOTH S3 buckets (frontend + images) to allow CloudFront access",
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowCloudFrontServicePrincipalReadOnly",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "cloudfront.amazonaws.com"
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::<BUCKET-NAME>/*",
+          "Condition": {
+            "StringEquals": {
+              "AWS:SourceArn": "arn:aws:cloudfront::<ACCOUNT-ID>:distribution/<DISTRIBUTION-ID>"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

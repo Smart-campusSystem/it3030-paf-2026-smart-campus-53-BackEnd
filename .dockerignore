@@ -1,0 +1,15 @@
+target/
+.git
+.gitignore
+.github
+.mvn/repository
+*.md
+*.log
+postman/
+scripts/
+data/
+uploads/
+node_modules/
+.idea/
+.vscode/
+*.iml
