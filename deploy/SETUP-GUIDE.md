@@ -673,6 +673,7 @@ sudo nano /opt/smart-campus/.env
 # Spring Boot
 SPRING_PROFILES_ACTIVE=prod
 SERVER_PORT=8080
+LOGGING_FILE_NAME=/opt/smart-campus/logs/smart-campus.log
 
 # MySQL (RDS)
 MYSQL_HOST=smart-campus-db.cxxxxxxxxx.ap-south-1.rds.amazonaws.com
@@ -765,6 +766,10 @@ Then on **EC2** (SSH session):
 # Move JAR and set ownership
 sudo mv /tmp/app.jar /opt/smart-campus/app.jar
 sudo chown smartcampus:smartcampus /opt/smart-campus/app.jar
+
+# Create the uploads folder (required for systemd security sandboxing)
+sudo mkdir -p /opt/smart-campus/uploads
+sudo chown smartcampus:smartcampus /opt/smart-campus/uploads
 
 # Start the service
 sudo systemctl start smart-campus

@@ -35,7 +35,7 @@ redis6-cli ping
 
 # --- Application directory ---
 echo "[4/6] Creating application directory..."
-mkdir -p /opt/smart-campus/logs
+mkdir -p /opt/smart-campus/logs /opt/smart-campus/uploads
 useradd -r -s /bin/false smartcampus || true
 chown -R smartcampus:smartcampus /opt/smart-campus
 
@@ -74,6 +74,7 @@ StandardError=append:/opt/smart-campus/logs/stderr.log
 # Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
+PrivateTmp=true
 ReadWritePaths=/opt/smart-campus/logs /opt/smart-campus/uploads
 
 [Install]
