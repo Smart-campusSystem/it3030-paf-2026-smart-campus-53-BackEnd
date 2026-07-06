@@ -112,13 +112,13 @@ Keep track of these as you create resources — you'll need them later:
         "s3:GetObject",
         "s3:DeleteObject"
       ],
-      "Resource": "arn:aws:s3:::smart-campus-images-b2/*"
+      "Resource": "arn:aws:s3:::<YOUR-S3-BUCKET-NAME>/*"
     },
     {
       "Sid": "S3ProfileImagesList",
       "Effect": "Allow",
       "Action": "s3:ListBucket",
-      "Resource": "arn:aws:s3:::smart-campus-images-b2"
+      "Resource": "arn:aws:s3:::<YOUR-S3-BUCKET-NAME>"
     },
     {
       "Sid": "CloudFrontInvalidation",
@@ -482,9 +482,9 @@ sudo systemctl status smart-campus  # Should show "inactive" (no JAR yet)
 
 ### 8.2 Profile Images Bucket
 
-If `smart-campus-images-b2` doesn't exist yet:
+If `<YOUR-S3-BUCKET-NAME>` doesn't exist yet:
 
-9. **"Create bucket"** → Name: `smart-campus-images-b2` → Same settings as above
+9. **"Create bucket"** → Name: `<YOUR-S3-BUCKET-NAME>` → Same settings as above
 10. Click **"Create bucket"**
 
 ---
@@ -550,13 +550,13 @@ If `smart-campus-images-b2` doesn't exist yet:
 ### 9.7 Add Origin 3: Images S3
 
 28. **"Create origin"** again
-29. **Origin domain**: Select `smart-campus-images-b2` from dropdown
+29. **Origin domain**: Select `<YOUR-S3-BUCKET-NAME>` from dropdown
 30. **Origin access**: OAC → Select the OAC you created earlier OR create new
 31. **Name**: `S3-smart-campus-images`
 32. Click **"Create origin"**
 33. **Update the images S3 bucket policy** — same process as Step 9.5:
     - Copy the policy from the banner
-    - Go to S3 → `smart-campus-images-b2` → Permissions → Bucket policy → Paste & Save
+    - Go to S3 → `<YOUR-S3-BUCKET-NAME>` → Permissions → Bucket policy → Paste & Save
 
 ### 9.8 Create Cache Behaviors
 
@@ -690,7 +690,7 @@ APP_JWT_EXPIRATION_MS=86400000
 # AWS S3
 AWS_ACCESS_KEY_ID=<access-key-from-step-3>
 AWS_SECRET_ACCESS_KEY=<secret-key-from-step-3>
-AWS_S3_PROFILE_BUCKET=smart-campus-images-b2
+AWS_S3_PROFILE_BUCKET=<YOUR-S3-BUCKET-NAME>
 AWS_S3_PROFILE_REGION=ap-south-1
 AWS_S3_PROFILE_PUBLIC_BASE_URL=https://<cloudfront-domain>.cloudfront.net/
 
@@ -1102,4 +1102,24 @@ C:\tools\ngrok\ngrok.exe http 9090 --domain=happy-robin-currently.ngrok-free.app
    redis6-cli info memory          # Check Redis memory
    ```
 4. **Friday**: Review RDS console → Check **Free storage space**
-5. **Monthly**: Check for old EBS snapshots (EC2 → Snapshots) and delete unused ones
+5. **Monthly**: Check for old EBS snapshots (EC2 -> Snapshots) and delete unused ones
+
+---
+
+## 15. Advanced Troubleshooting
+
+### A. CloudFront Custom Error Pages Masking Backend Errors
+If you configure Custom Error Pages in CloudFront to return `/index.html` with a `200 OK` status for `403` or `404` errors (which is standard for React apps), CloudFront will intercept backend errors too! If your backend throws a 403 (CORS) or 404, CloudFront will return your frontend `index.html` instead. This can make API requests (like uploads) appear to succeed with a `200 OK` status, but the response body will unexpectedly be HTML instead of JSON. 
+**Fix:** Check backend logs (`/opt/smart-campus/logs/stdout.log`) to see the actual error, or temporarily disable Custom Error Pages in CloudFront while debugging.
+
+### B. CORS Issues with CloudFront Domain
+When accessing the backend via CloudFront, the browser sends an `Origin: https://<cloudfront-id>.cloudfront.net` header. Spring Boot treats this as a cross-origin request because the backend runs on an EC2 domain or IP.
+**Fix:** Ensure your CloudFront domain is added to the backend's allowed CORS origins in `SecurityConfig.java` and `WebCorsConfig.java`.
+
+### C. File Upload Size Limits
+Spring Boot defaults to a 1MB max file upload size. If you upload larger files (e.g., profile pictures), you will get a `500 Internal Server Error` (`SizeLimitExceededException`).
+**Fix:** Increase the multipart size limits in your `application.properties`:
+```properties
+spring.servlet.multipart.max-file-size=20MB
+spring.servlet.multipart.max-request-size=20MB
+```

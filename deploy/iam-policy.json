@@ -36,13 +36,13 @@
           "s3:GetObject",
           "s3:DeleteObject"
         ],
-        "Resource": "arn:aws:s3:::smart-campus-images-b2/*"
+        "Resource": "arn:aws:s3:::<YOUR-S3-BUCKET-NAME>/*"
       },
       {
         "Sid": "S3ProfileImagesList",
         "Effect": "Allow",
         "Action": "s3:ListBucket",
-        "Resource": "arn:aws:s3:::smart-campus-images-b2"
+        "Resource": "arn:aws:s3:::<YOUR-S3-BUCKET-NAME>"
       },
       {
         "Sid": "CloudFrontInvalidation",

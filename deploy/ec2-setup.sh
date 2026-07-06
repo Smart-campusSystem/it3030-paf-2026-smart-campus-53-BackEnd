@@ -139,7 +139,7 @@ APP_JWT_EXPIRATION_MS=86400000
 # AWS S3 (Profile Images)
 AWS_ACCESS_KEY_ID=<your-iam-access-key>
 AWS_SECRET_ACCESS_KEY=<your-iam-secret-key>
-AWS_S3_PROFILE_BUCKET=smart-campus-images-b2
+AWS_S3_PROFILE_BUCKET=<YOUR-S3-BUCKET-NAME>
 AWS_S3_PROFILE_REGION=ap-south-1
 AWS_S3_PROFILE_PUBLIC_BASE_URL=https://<cloudfront-id>.cloudfront.net/
 

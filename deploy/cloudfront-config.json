@@ -36,7 +36,7 @@
       },
       "images_s3": {
         "id": "S3-smart-campus-images",
-        "domain_name": "smart-campus-images-b2.s3.ap-south-1.amazonaws.com",
+        "domain_name": "<YOUR-S3-BUCKET-NAME>.s3.ap-south-1.amazonaws.com",
         "origin_access_control": {
           "note": "Same OAC type as frontend S3 bucket",
           "signing_protocol": "sigv4",
