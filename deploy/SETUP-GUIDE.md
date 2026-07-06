@@ -674,6 +674,7 @@ sudo nano /opt/smart-campus/.env
 SPRING_PROFILES_ACTIVE=prod
 SERVER_PORT=8080
 LOGGING_FILE_NAME=/opt/smart-campus/logs/smart-campus.log
+SERVER_FORWARD_HEADERS_STRATEGY=framework
 
 # MySQL (RDS)
 MYSQL_HOST=smart-campus-db.cxxxxxxxxx.ap-south-1.rds.amazonaws.com
@@ -696,6 +697,7 @@ AWS_S3_PROFILE_PUBLIC_BASE_URL=https://<cloudfront-domain>.cloudfront.net/
 # Google OAuth2
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI=https://<cloudfront-domain>.cloudfront.net/login/oauth2/code/google
 APP_OAUTH2_FRONTEND_REDIRECT_URL=https://<cloudfront-domain>.cloudfront.net/auth/callback
 
 # Mail
@@ -726,7 +728,7 @@ SPRING_DATA_REDIS_PORT=6379
 4. Click on your **OAuth 2.0 Client ID**
 5. Under **"Authorized redirect URIs"**, click **"ADD URI"** and add:
    ```
-   https://<cloudfront-domain>.cloudfront.net/auth/callback
+   https://<cloudfront-domain>.cloudfront.net/login/oauth2/code/google
    ```
 6. Under **"Authorized JavaScript origins"**, click **"ADD URI"** and add:
    ```
