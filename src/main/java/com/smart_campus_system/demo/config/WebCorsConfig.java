@@ -20,6 +20,7 @@ public class WebCorsConfig {
 				registry.addMapping("/api/**")
 						// Vite often uses 5173; if busy it picks 5174, 5175, … — patterns cover all.
 						.allowedOriginPatterns(
+								"https://d2u0kpi9xvmyfg.cloudfront.net",
 								"http://localhost:*",
 								"http://127.0.0.1:*"
 						)
