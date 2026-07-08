@@ -73,20 +73,13 @@ pipeline {
                 echo '🚀 Deploying to EC2...'
                 withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
                     // Upload JAR
-                    sh """
-                        scp -o StrictHostKeyChecking=no -i "\$SSH_KEY_FILE" target/*.jar ec2-user@${EC2_HOST}:/tmp/app.jar
+                    bat """
+                        scp -o StrictHostKeyChecking=no -i "%SSH_KEY_FILE%" target/demo-0.0.1-SNAPSHOT.jar ec2-user@${EC2_HOST}:/tmp/app.jar
                     """
 
                     // Stop, deploy, start
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i "\$SSH_KEY_FILE" ec2-user@${EC2_HOST} '
-                            sudo systemctl stop smart-campus || true
-                            sleep 2
-                            [ -f ${APP_DIR}/app.jar ] && sudo cp ${APP_DIR}/app.jar ${APP_DIR}/app.jar.backup
-                            sudo mv /tmp/app.jar ${APP_DIR}/app.jar
-                            sudo chown smartcampus:smartcampus ${APP_DIR}/app.jar
-                            sudo systemctl start smart-campus
-                        '
+                    bat """
+                        ssh -o StrictHostKeyChecking=no -i "%SSH_KEY_FILE%" ec2-user@${EC2_HOST} "sudo systemctl stop smart-campus || true ; sleep 2 ; [ -f ${APP_DIR}/app.jar ] && sudo cp ${APP_DIR}/app.jar ${APP_DIR}/app.jar.backup ; sudo mv /tmp/app.jar ${APP_DIR}/app.jar ; sudo chown smartcampus:smartcampus ${APP_DIR}/app.jar ; sudo systemctl start smart-campus"
                     """
                 }
             }
@@ -96,24 +89,13 @@ pipeline {
             steps {
                 echo '🏥 Checking application health...'
                 withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-                    sh """
-                        RETRIES=0
-                        MAX_RETRIES=15
-                        until [ \$RETRIES -ge \$MAX_RETRIES ]; do
-                            RETRIES=\$((RETRIES + 1))
-                            echo "  Attempt \$RETRIES/\$MAX_RETRIES..."
-                            STATUS=\$(ssh -o StrictHostKeyChecking=no -i "\$SSH_KEY_FILE" ec2-user@${EC2_HOST} \\
-                                'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/health' 2>/dev/null || echo "000")
-                            if [ "\$STATUS" = "200" ]; then
-                                echo "✅ Application is healthy!"
-                                ssh -o StrictHostKeyChecking=no -i "\$SSH_KEY_FILE" ec2-user@${EC2_HOST} 'curl -s http://localhost:8080/api/health'
-                                exit 0
-                            fi
-                            sleep 5
-                        done
-                        echo "❌ Health check failed!"
-                        exit 1
-                    """
+                    retry(15) {
+                        sleep time: 5, unit: 'SECONDS'
+                        bat """
+                            ssh -o StrictHostKeyChecking=no -i "%SSH_KEY_FILE%" ec2-user@${EC2_HOST} "curl -s -f http://localhost:8080/api/health"
+                        """
+                    }
+                    echo "✅ Application is healthy!"
                 }
             }
         }
@@ -123,15 +105,8 @@ pipeline {
         failure {
             echo '❌ Build failed! Attempting rollback...'
             withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-                sh """
-                    ssh -o StrictHostKeyChecking=no -i "\$SSH_KEY_FILE" ec2-user@${EC2_HOST} '
-                        sudo systemctl stop smart-campus || true
-                        if [ -f ${APP_DIR}/app.jar.backup ]; then
-                            sudo mv ${APP_DIR}/app.jar.backup ${APP_DIR}/app.jar
-                            sudo systemctl start smart-campus
-                            echo "Rolled back to previous version."
-                        fi
-                    ' || true
+                bat """
+                    ssh -o StrictHostKeyChecking=no -i "%SSH_KEY_FILE%" ec2-user@${EC2_HOST} "sudo systemctl stop smart-campus || true ; if [ -f ${APP_DIR}/app.jar.backup ]; then sudo mv ${APP_DIR}/app.jar.backup ${APP_DIR}/app.jar ; sudo systemctl start smart-campus ; echo 'Rolled back to previous version.' ; fi" || exit 0
                 """
             }
         }
