@@ -31,6 +31,9 @@ class TicketApiTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private com.smart_campus_system.demo.repository.UserRepository userRepository;
+
 	@Test
 	void listAllTickets_forbiddenForStudent() throws Exception {
 		mockMvc.perform(get("/api/tickets").with(user("student1@campus.edu").roles("USER")))
@@ -122,6 +125,7 @@ class TicketApiTest {
 
 	@Test
 	void assignTechnician_forbiddenForNonAdmin() throws Exception {
+		long tech1Id = userRepository.findByEmail("tech1@campus.edu").get().getId();
 		MvcResult created = mockMvc.perform(multipart("/api/tickets")
 						.param("category", "Other")
 						.param("description", "x")
@@ -135,12 +139,13 @@ class TicketApiTest {
 		mockMvc.perform(put("/api/tickets/" + id + "/assign")
 						.with(user("student1@campus.edu").roles("USER"))
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"technicianId\":2}"))
+						.content("{\"technicianId\":" + tech1Id + "}"))
 				.andExpect(status().isForbidden());
 	}
 
 	@Test
 	void assignTechnician_asAdmin() throws Exception {
+		long tech1Id = userRepository.findByEmail("tech1@campus.edu").get().getId();
 		MvcResult created = mockMvc.perform(multipart("/api/tickets")
 						.param("category", "Other")
 						.param("description", "y")
@@ -154,7 +159,7 @@ class TicketApiTest {
 		mockMvc.perform(put("/api/tickets/" + id + "/assign")
 						.with(user("admin@campus.edu").roles("ADMIN"))
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"technicianId\":2}"))
+						.content("{\"technicianId\":" + tech1Id + "}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.assignedTechnician.username").value("tech1"));
 	}
