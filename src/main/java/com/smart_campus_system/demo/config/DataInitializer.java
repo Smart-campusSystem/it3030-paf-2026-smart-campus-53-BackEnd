@@ -15,13 +15,12 @@ public class DataInitializer {
 	@Bean
 	CommandLineRunner seedUsers(UserRepository users, PasswordEncoder encoder) {
 		return args -> {
-			if (users.count() > 0) {
-				return;
+			if (users.findByEmail("student1@campus.edu").isEmpty()) {
+				users.save(user("admin", "admin@campus.edu", Role.ADMIN, encoder));
+				users.save(user("tech1", "tech1@campus.edu", Role.TECHNICIAN, encoder));
+				users.save(user("tech2", "tech2@campus.edu", Role.TECHNICIAN, encoder));
+				users.save(user("student1", "student1@campus.edu", Role.USER, encoder));
 			}
-			users.save(user("admin", "admin@campus.edu", Role.ADMIN, encoder));
-			users.save(user("tech1", "tech1@campus.edu", Role.TECHNICIAN, encoder));
-			users.save(user("tech2", "tech2@campus.edu", Role.TECHNICIAN, encoder));
-			users.save(user("student1", "student1@campus.edu", Role.USER, encoder));
 		};
 	}
 

@@ -34,7 +34,7 @@ public class UserService {
 			ProfileImageStorage profileImageStorage,
 			JwtUtil jwtUtil,
 			OtpService otpService,
-			NotificationProducer notificationProducer) {
+			@org.springframework.beans.factory.annotation.Autowired(required = false) NotificationProducer notificationProducer) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.profileImageStorage = profileImageStorage;
@@ -74,7 +74,9 @@ public class UserService {
 				.isRead(false)
 				.createdAt(java.time.LocalDateTime.now())
 				.build();
-		notificationProducer.send(n);
+		if (notificationProducer != null) {
+			notificationProducer.send(n);
+		}
 
 		return AuthResponse.builder()
 				.accessToken(jwtUtil.generateToken(user))
