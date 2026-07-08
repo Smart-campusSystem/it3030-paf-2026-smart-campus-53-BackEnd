@@ -21,7 +21,6 @@ pipeline {
     environment {
         EC2_HOST       = credentials('ec2-host')  // or set as pipeline param
         APP_DIR        = '/opt/smart-campus'
-        HEALTH_URL     = "http://${EC2_HOST}:8080/api/health"
     }
 
     options {
