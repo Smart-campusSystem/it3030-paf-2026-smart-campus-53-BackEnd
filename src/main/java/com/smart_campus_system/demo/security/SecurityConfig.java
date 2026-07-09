@@ -37,12 +37,15 @@ public class SecurityConfig {
 				.cors(Customizer.withDefaults())
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**", "/api/health", "/oauth2/**", "/login/oauth2/**", "/error").permitAll()
+						.requestMatchers("/api/auth/**", "/api/health", "/api/oauth2/**", "/api/login/oauth2/**", "/error").permitAll()
 						// Anonymous maintenance requests and public ticket lookup (method security still applies on controllers).
 						.requestMatchers(HttpMethod.POST, "/api/tickets").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/tickets/{id:\\d+}").permitAll()
 						.anyRequest().authenticated())
-				.oauth2Login(oauth2 -> oauth2.successHandler(oAuth2LoginSuccessHandler))
+				.oauth2Login(oauth2 -> oauth2
+						.authorizationEndpoint(auth -> auth.baseUri("/api/oauth2/authorization"))
+						.redirectionEndpoint(redir -> redir.baseUri("/api/login/oauth2/code/*"))
+						.successHandler(oAuth2LoginSuccessHandler))
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
